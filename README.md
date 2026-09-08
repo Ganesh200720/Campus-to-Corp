@@ -219,28 +219,6 @@ frontend/src/
 
 ---
 
-## 13. 5-Minute SIH Demo Flow
-
-1. **Login as Student (Rahul)** → Dashboard shows Placement Readiness (ScoreRing), the "SkillBridge
-   Journey" lifecycle tracker, and top career/internship recommendations.
-2. **Skill Assessment** → take the 20-question test → see instant Overall Skill Score, Strong/Weak
-   skills, and category breakdown.
-3. **Skill Analysis** → switch target role (e.g. Full Stack Developer) → see current-vs-required
-   skill bars with Strong / Minor Gap / Major Gap badges.
-4. **Career Guidance** → see ranked roles with % match and an explicit "why" (matched skills vs
-   gaps) plus a visual roadmap.
-5. **Internships** → sorted by match % → open "Software Development Intern" → see the match
-   explanation → **Apply**.
-6. **My Applications** → see the new application with a live pipeline tracker.
-7. **Learning Hub** → see React/AWS recommendations tied directly to the gaps just identified.
-8. **Portfolio** → show verified skills, projects, certifications and the Placement-Ready badge.
-9. **Switch to Industry (TechNova)** → **Candidate Matching** → pick "Frontend Developer Intern" →
-   show Rahul ranked near the top with an explicit "why this candidate" breakdown.
-10. **Switch to Admin** → Institution Analytics → show department-wise readiness, top skills, and the
-    industry-demand-vs-student-skill priority gap chart — filter by department live.
-
----
-
 ## 14. Known Limitations
 
 - Matching/recommendation logic is a transparent, deterministic weighted-scoring algorithm — **not**
@@ -260,21 +238,5 @@ frontend/src/
   migration (see Architecture section).
 
 ---
-
-## 15. Suggestions for Next Development Phase
-
-1. Swap the rule-based matching engine for a real ML ranking model (the service-layer boundary is
-   already in place).
-2. Add a real LLM-backed Mock Interview evaluator and an LLM-assisted resume parser for auto-filling
-   student profiles.
-3. Move to PostgreSQL + S3-compatible storage for real document/resume management.
-4. Add real-time notifications (WebSockets) for application status changes.
-5. Build out dedicated Faculty models (FDP, Research Collaboration, Consultancy) rather than reusing
-   `LearningProgram`.
-6. Add an admin-side moderation/verification workflow for certifications and achievements ("Verified
-   Skills" badge currently defaults to true on creation).
-
----
-
 Built for Smart India Hackathon 2026 · Problem Statement 26044 · Ministry of AYUSH — All India
 Institute of Ayurveda.
