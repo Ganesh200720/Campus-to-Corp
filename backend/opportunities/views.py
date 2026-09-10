@@ -274,21 +274,37 @@ class CandidateMatchesView(APIView):
 
         students = User.objects.filter(role='student').select_related('student_profile')
         ranked = []
+
         for s in students:
             if not hasattr(s, 'student_profile'):
                 continue
-            cgpa = s.student_profile.cgpa
-            interest = s.student_profile.career_interest or ''
-            m = services.compute_opportunity_match(s, skill_names, min_cgpa, cgpa, interest, role_hint)
+
+            profile = s.student_profile
+            cgpa = profile.cgpa
+            interest = profile.career_interest or ''
+            m = services.compute_opportunity_match(
+                s, skill_names, min_cgpa, cgpa, interest, role_hint
+            )
+
             ranked.append({
                 "student_id": s.id,
-                "name": s.student_profile.full_name,
-                "college": s.student_profile.college,
+                "name": profile.full_name,
+                "college": profile.college,
+                "degree": profile.degree,
+                "branch": profile.branch,
+                "year": profile.year,
                 "cgpa": cgpa,
+                "location": profile.location,
+                "bio": profile.bio,
+                "career_interest": profile.career_interest,
+                "resume_uploaded": profile.resume_uploaded,
+                "profile_completion": profile.profile_completion,
+                "skills": services.get_student_skill_map(s),
                 "match_percent": m['match_percent'],
                 "matched_skills": m['matched_skills'],
                 "skill_gaps": m['skill_gaps'],
                 "cgpa_eligible": m['cgpa_eligible'],
             })
+
         ranked.sort(key=lambda x: -x['match_percent'])
         return Response(ranked[:20])
