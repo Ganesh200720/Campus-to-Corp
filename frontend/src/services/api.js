@@ -50,4 +50,35 @@ api.interceptors.response.use(
 )
 
 export default api
+
 export { API_URL }
+
+export const collaborationApi = {
+  getOpportunities: (params = {}) =>
+    api.get('/collaborations/', { params }),
+
+  getOpportunity: (id) =>
+    api.get(`/collaborations/${id}/`),
+
+  createOpportunity: (data) =>
+    api.post('/collaborations/', data),
+
+  getMyOpportunities: () =>
+    api.get('/collaborations/industry/my-opportunities/'),
+
+  sendRequest: (opportunityId, message) =>
+    api.post(`/collaborations/${opportunityId}/request/`, {
+      message,
+    }),
+
+  getMyRequests: () =>
+    api.get('/collaborations/my-requests/'),
+
+  getIndustryRequests: () =>
+    api.get('/collaborations/industry/requests/'),
+
+  updateRequestStatus: (requestId, status) =>
+    api.patch(`/collaborations/requests/${requestId}/status/`, {
+      status,
+    }),
+}
