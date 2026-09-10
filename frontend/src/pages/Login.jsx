@@ -1,14 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { roleHome } from '../utils/roleHome'
 import { GraduationCap, User, Building2, Presentation, ShieldCheck, Loader2 } from 'lucide-react'
 
 const DEMO_ACCOUNTS = [
   { role: 'student', username: 'student', label: 'Student Demo', desc: 'Rahul Sharma · B.Tech CSE', icon: User, color: 'bg-brand-50 text-brand-600 border-brand-200' },
   { role: 'industry', username: 'industry', label: 'Industry Demo', desc: 'TechNova Solutions', icon: Building2, color: 'bg-sky-50 text-sky-600 border-sky-200' },
   { role: 'faculty', username: 'faculty', label: 'Faculty Demo', desc: 'Dr. Anita Verma', icon: Presentation, color: 'bg-amber-50 text-amber-600 border-amber-200' },
-  { role: 'admin', username: 'admin', label: 'Institution Demo', desc: 'Analytics & Student Directory', icon: ShieldCheck, color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+  { role: 'admin', username: 'admin', label: 'Admin Demo', desc: 'Institution Analytics', icon: ShieldCheck, color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
 ]
 const DEMO_PASSWORD = 'SkillBridge@2026'
 
@@ -25,7 +24,7 @@ export default function Login() {
     setLoading(true)
     try {
       const data = await login(u, p)
-      navigate(roleHome(data.role))
+      navigate(`/${data.role}`)
     } catch (e) {
       setError(e?.response?.data?.detail || 'Invalid username or password.')
     } finally {

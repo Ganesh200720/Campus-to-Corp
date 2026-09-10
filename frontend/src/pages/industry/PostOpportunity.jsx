@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import api from '../../services/api'
 import LoadingState from '../../components/LoadingState'
 import { PlusCircle, CheckCircle2 } from 'lucide-react'
@@ -7,19 +7,25 @@ import { PlusCircle, CheckCircle2 } from 'lucide-react'
 export default function PostOpportunity() {
   const [kind, setKind] = useState('internship')
   const [skills, setSkills] = useState([])
+  const [assessments, setAssessments] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [form, setForm] = useState({
     title: '', description: '', location: '', mode: 'hybrid', duration: '3 months', stipend: '',
     experience_required: '0-1 years', salary: '', min_cgpa: 6.0, deadline: '', required_skills: [],
+    required_assessment: '',
   })
   const navigate = useNavigate()
 
   useEffect(() => {
     (async () => {
-      const res = await api.get('/skills/skills/')
-      setSkills(res.data)
+      const [skillsRes, assessmentsRes] = await Promise.all([
+        api.get('/skills/skills/'),
+        api.get('/skills/industry/assessments/'),
+      ])
+      setSkills(skillsRes.data)
+      setAssessments(assessmentsRes.data.filter((a) => a.active))
       setLoading(false)
     })()
   }, [])
@@ -134,6 +140,23 @@ export default function PostOpportunity() {
           <label className="text-sm font-medium text-slate-600 mb-1 block">Application Deadline</label>
           <input type="date" required value={form.deadline} onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))}
             className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200" />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-slate-600 mb-1 block">Required Assessment (optional)</label>
+          <select value={form.required_assessment} onChange={(e) => setForm((f) => ({ ...f, required_assessment: e.target.value }))}
+            className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+            <option value="">No prerequisite assessment</option>
+            {assessments.map((a) => <option key={a.id} value={a.id}>{a.title} ({a.question_count} questions)</option>)}
+          </select>
+          {assessments.length === 0 && (
+            <p className="text-xs text-slate-400 mt-1">
+              You haven't created any active assessments yet — <Link to="/industry/assessments" className="text-brand-600 hover:underline">create one</Link> first if you want to require a prerequisite.
+            </p>
+          )}
+          {form.required_assessment && (
+            <p className="text-xs text-amber-600 mt-1">Students must pass this assessment before they can apply.</p>
+          )}
         </div>
 
         <div>

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import api from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import LoadingState from '../../components/LoadingState'
@@ -7,12 +6,12 @@ import StatCard from '../../components/StatCard'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
-import { Users, ClipboardCheck, TrendingUp, Briefcase, Award, Sparkles, ArrowRight } from 'lucide-react'
+import { Users, ClipboardCheck, TrendingUp, Briefcase, Award, Sparkles } from 'lucide-react'
 
 const DEPARTMENTS = ['', 'Computer Science', 'Information Technology', 'Electronics & Communication', 'Mechanical Engineering']
 const YEARS = ['', '1', '2', '3', '4']
 
-export default function InstitutionDashboard() {
+export default function AdminDashboard() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState(null)
@@ -49,19 +48,6 @@ export default function InstitutionDashboard() {
           </select>
         </div>
       </div>
-
-      <Link to="/institution/students" className="card p-5 flex items-center justify-between hover:border-brand-300 border border-transparent transition-colors group">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
-            <Users size={20} />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-800">Student Directory</p>
-            <p className="text-xs text-slate-500">Browse every student's profile, skills, internships and placement progress</p>
-          </div>
-        </div>
-        <ArrowRight size={18} className="text-slate-400 group-hover:text-brand-600 transition-colors" />
-      </Link>
 
       <div className="grid md:grid-cols-4 gap-4">
         <StatCard icon={Users} label="Total Students" value={data.total_students} color="bg-brand-50 text-brand-600" />
