@@ -50,7 +50,7 @@ class InternshipListView(APIView):
         items = list(qs)
         if request.user.role == 'student' and (ordering == 'match' or not ordering):
             items.sort(key=lambda x: -match_scores.get(x.id, 0))
-        serializer = InternshipSerializer(items, many=True, context={'match_scores': match_scores, 'request': request})
+        serializer = InternshipSerializer(items, many=True, context={'match_scores': match_scores})
         return Response(serializer.data)
 
 
@@ -68,7 +68,7 @@ class InternshipDetailView(APIView):
             m = services.compute_opportunity_match(request.user, skill_names, internship.min_cgpa, cgpa, interest, internship.title)
             match_scores[internship.id] = m['match_percent']
             explanation = m
-        data = InternshipSerializer(internship, context={'match_scores': match_scores, 'request': request}).data
+        data = InternshipSerializer(internship, context={'match_scores': match_scores}).data
         data['match_explanation'] = explanation
         return Response(data)
 
@@ -97,7 +97,7 @@ class JobListView(APIView):
         items = list(qs)
         if request.user.role == 'student':
             items.sort(key=lambda x: -match_scores.get(x.id, 0))
-        serializer = JobSerializer(items, many=True, context={'match_scores': match_scores, 'request': request})
+        serializer = JobSerializer(items, many=True, context={'match_scores': match_scores})
         return Response(serializer.data)
 
 
@@ -115,30 +115,9 @@ class JobDetailView(APIView):
             m = services.compute_opportunity_match(request.user, skill_names, job.min_cgpa, cgpa, interest, job.title)
             match_scores[job.id] = m['match_percent']
             explanation = m
-        data = JobSerializer(job, context={'match_scores': match_scores, 'request': request}).data
+        data = JobSerializer(job, context={'match_scores': match_scores}).data
         data['match_explanation'] = explanation
         return Response(data)
-
-
-def _check_assessment_prerequisite(user, target):
-    """Feature Group 3: enforce assessment-as-prerequisite server-side.
-    Returns an error Response if the student hasn't passed the target's required
-    assessment, or None if they're clear to apply (or none is required)."""
-    if not target.required_assessment_id:
-        return None
-    assessment = target.required_assessment
-    status_info = services.get_assessment_status(user, assessment)
-    if status_info['status'] == 'passed':
-        return None
-    return Response({
-        "detail": f"You need to complete the required assessment for {assessment.company.company_name} "
-                    f"before applying for this opportunity.",
-        "code": "ASSESSMENT_REQUIRED",
-        "assessment_id": assessment.id,
-        "assessment_title": assessment.title,
-        "company_name": assessment.company.company_name,
-        "student_assessment_status": status_info['status'],
-    }, status=403)
 
 
 class ApplyView(APIView):
@@ -154,9 +133,6 @@ class ApplyView(APIView):
             internship = get_object_or_404(Internship, pk=internship_id)
             if Application.objects.filter(student=request.user, internship=internship).exists():
                 return Response({"detail": "Already applied."}, status=400)
-            blocked = _check_assessment_prerequisite(request.user, internship)
-            if blocked:
-                return blocked
             skill_names = [s.name for s in internship.required_skills.all()]
             m = services.compute_opportunity_match(request.user, skill_names, internship.min_cgpa, cgpa, interest, internship.title)
             app = Application.objects.create(student=request.user, internship=internship, match_score=m['match_percent'])
@@ -164,9 +140,6 @@ class ApplyView(APIView):
             job = get_object_or_404(Job, pk=job_id)
             if Application.objects.filter(student=request.user, job=job).exists():
                 return Response({"detail": "Already applied."}, status=400)
-            blocked = _check_assessment_prerequisite(request.user, job)
-            if blocked:
-                return blocked
             skill_names = [s.name for s in job.required_skills.all()]
             m = services.compute_opportunity_match(request.user, skill_names, job.min_cgpa, cgpa, interest, job.title)
             app = Application.objects.create(student=request.user, job=job, match_score=m['match_percent'])
@@ -217,39 +190,16 @@ class MyInternshipsView(APIView):
     def post(self, request):
         profile = request.user.industry_profile
         data = request.data
-        required_assessment = self._resolve_assessment(profile, data.get('required_assessment'))
         internship = Internship.objects.create(
             company=profile, title=data['title'], description=data.get('description', ''),
             location=data.get('location', ''), mode=data.get('mode', 'hybrid'),
             duration=data.get('duration', '3 months'), stipend=data.get('stipend', 'Unpaid'),
             min_cgpa=data.get('min_cgpa', 6.0), deadline=data.get('deadline'),
-            required_assessment=required_assessment,
         )
         skill_ids = data.get('required_skills', [])
         if skill_ids:
             internship.required_skills.set(skill_ids)
-        return Response(InternshipSerializer(internship, context={'request': request}).data, status=201)
-
-    def patch(self, request, pk=None):
-        pk = pk or request.data.get('id')
-        internship = get_object_or_404(Internship, pk=pk, company__user=request.user)
-        data = request.data
-        for field in ['title', 'description', 'location', 'mode', 'duration', 'stipend', 'min_cgpa', 'deadline', 'active']:
-            if field in data:
-                setattr(internship, field, data[field])
-        if 'required_assessment' in data:
-            internship.required_assessment = self._resolve_assessment(request.user.industry_profile, data.get('required_assessment'))
-        internship.save()
-        if 'required_skills' in data:
-            internship.required_skills.set(data['required_skills'])
-        return Response(InternshipSerializer(internship, context={'request': request}).data)
-
-    @staticmethod
-    def _resolve_assessment(profile, assessment_id):
-        if not assessment_id:
-            return None
-        from skills.models import IndustryAssessment
-        return get_object_or_404(IndustryAssessment, pk=assessment_id, company=profile)
+        return Response(InternshipSerializer(internship).data, status=201)
 
 
 class MyJobsView(APIView):
@@ -262,31 +212,16 @@ class MyJobsView(APIView):
     def post(self, request):
         profile = request.user.industry_profile
         data = request.data
-        required_assessment = MyInternshipsView._resolve_assessment(profile, data.get('required_assessment'))
         job = Job.objects.create(
             company=profile, title=data['title'], description=data.get('description', ''),
             location=data.get('location', ''), experience_required=data.get('experience_required', '0-1 years'),
             salary=data.get('salary', 'As per industry standards'), min_cgpa=data.get('min_cgpa', 6.0),
-            deadline=data.get('deadline'), required_assessment=required_assessment,
+            deadline=data.get('deadline'),
         )
         skill_ids = data.get('required_skills', [])
         if skill_ids:
             job.required_skills.set(skill_ids)
-        return Response(JobSerializer(job, context={'request': request}).data, status=201)
-
-    def patch(self, request, pk=None):
-        pk = pk or request.data.get('id')
-        job = get_object_or_404(Job, pk=pk, company__user=request.user)
-        data = request.data
-        for field in ['title', 'description', 'location', 'experience_required', 'salary', 'min_cgpa', 'deadline', 'active']:
-            if field in data:
-                setattr(job, field, data[field])
-        if 'required_assessment' in data:
-            job.required_assessment = MyInternshipsView._resolve_assessment(request.user.industry_profile, data.get('required_assessment'))
-        job.save()
-        if 'required_skills' in data:
-            job.required_skills.set(data['required_skills'])
-        return Response(JobSerializer(job, context={'request': request}).data)
+        return Response(JobSerializer(job).data, status=201)
 
 
 class IndustryApplicationsView(generics.ListAPIView):
@@ -354,6 +289,9 @@ class CandidateMatchesView(APIView):
                 "matched_skills": m['matched_skills'],
                 "skill_gaps": m['skill_gaps'],
                 "cgpa_eligible": m['cgpa_eligible'],
+                "github_url": s.student_profile.github_url,
+                "linkedin_url": s.student_profile.linkedin_url,
+                "portfolio_url": s.student_profile.portfolio_url,
             })
         ranked.sort(key=lambda x: -x['match_percent'])
         return Response(ranked[:20])

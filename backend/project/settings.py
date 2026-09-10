@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'portfolio',
     'interviews',
     'analytics',
+    'collaborations',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
