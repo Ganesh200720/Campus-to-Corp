@@ -3,13 +3,24 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics, permissions
-from .serializers import (MyTokenObtainPairSerializer, StudentProfileSerializer,
-                           IndustryProfileSerializer, FacultyProfileSerializer, InstitutionProfileSerializer)
+from .serializers import (
+    MyTokenObtainPairSerializer,
+    SignupSerializer,
+    StudentProfileSerializer,
+    IndustryProfileSerializer,
+    FacultyProfileSerializer,
+    InstitutionProfileSerializer
+)
 from .models import StudentProfile, IndustryProfile, FacultyProfile, InstitutionProfile
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
+
+
+class SignupView(generics.CreateAPIView):
+    serializer_class = SignupSerializer
+    permission_classes = [permissions.AllowAny]
 
 
 class MeView(APIView):

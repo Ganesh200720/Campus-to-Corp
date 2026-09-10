@@ -62,3 +62,38 @@ class InstitutionProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstitutionProfile
         fields = '__all__'
+
+
+class SignupSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, min_length=6)
+    confirm_password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'confirm_password', 'full_name']
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['confirm_password']:
+            raise serializers.ValidationError({'confirm_password': 'Passwords do not match.'})
+        if User.objects.filter(username=attrs['username']).exists():
+            raise serializers.ValidationError({'username': 'Username already exists.'})
+        if User.objects.filter(email=attrs['email']).exists():
+            raise serializers.ValidationError({'email': 'Email already exists.'})
+        return attrs
+
+    def create(self, validated_data):
+        full_name = validated_data.pop('full_name')
+        validated_data.pop('confirm_password')
+        password = validated_data.pop('password')
+
+        user = User.objects.create_user(
+            password=password,
+            role='student',
+            **validated_data
+        )
+        StudentProfile.objects.create(
+            user=user,
+            full_name=full_name
+        )
+        return user
