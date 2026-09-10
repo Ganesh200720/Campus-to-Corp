@@ -4,7 +4,8 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from accounts.models import User, StudentProfile, IndustryProfile, FacultyProfile, InstitutionProfile
-from skills.models import Skill, AssessmentQuestion, StudentSkill
+from skills.models import (Skill, AssessmentQuestion, StudentSkill, IndustryAssessment,
+                            IndustryAssessmentQuestion, IndustryAssessmentAttempt, IndustryAssessmentAnswer)
 from opportunities.models import Internship, Job, LearningProgram, Application
 from portfolio.models import Project, Certification, Achievement
 from interviews.models import InterviewQuestion
@@ -33,6 +34,8 @@ class Command(BaseCommand):
             companies = self._create_companies() + [demo['industry']]
             internships = self._create_internships(companies, skills)
             jobs = self._create_jobs(companies, skills)
+            self.stdout.write("Creating industry assessments (company-wise, with a live prerequisite demo)...")
+            self._create_industry_assessments(companies, students, demo['student'])
             self.stdout.write("Creating learning programs...")
             self._create_learning_programs(skills)
             self.stdout.write("Creating portfolios (projects/certs/achievements)...")
@@ -49,6 +52,10 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------
     def _clear(self):
+        IndustryAssessmentAnswer.objects.all().delete()
+        IndustryAssessmentAttempt.objects.all().delete()
+        IndustryAssessmentQuestion.objects.all().delete()
+        IndustryAssessment.objects.all().delete()
         Application.objects.all().delete()
         Project.objects.all().delete()
         Certification.objects.all().delete()
@@ -319,6 +326,120 @@ class Command(BaseCommand):
             job.required_skills.set([skills[s] for s in skill_names if s in skills])
             jobs.append(job)
         return jobs
+
+    # ------------------------------------------------------------------
+    def _create_industry_assessments(self, companies, students, demo_student):
+        """Feature Groups 1-4: industry-created assessments as an application prerequisite.
+        Sets up two real, database-backed assessments:
+          - TechNova's "Full Stack Developer Assessment" is left UNATTEMPTED by the demo
+            student on purpose, so the live demo can show the full blocking flow:
+            Apply -> blocked -> Complete Assessment -> pass -> Apply succeeds.
+          - Cloudera's aptitude test already has attempt history from other students,
+            so the industry-side results screen isn't empty on first login.
+        """
+        technova = next((c for c in companies if c.company_name == "TechNova Solutions"), companies[-1])
+        cloudera = next((c for c in companies if c.company_name == "Cloudera Systems"), companies[0])
+
+        # ---- Assessment 1: TechNova — Full Stack Developer Assessment (questionnaire) ----
+        a1 = IndustryAssessment.objects.create(
+            company=technova, title="Full Stack Developer Assessment",
+            description="A short technical + aptitude assessment covering the core skills TechNova looks "
+                         "for in Full Stack Developer applicants.",
+            assessment_type="questionnaire", duration_minutes=25, passing_score=60, max_attempts=2, active=True)
+        a1_questions = [
+            ("technical", "mcq", "Which HTTP method is idempotent and safe for retrieving data?",
+             "GET", "POST", "DELETE", "PATCH", "a", 1),
+            ("technical", "mcq", "In React, which hook lets a component manage local state?",
+             "useEffect", "useState", "useContext", "useRef", "b", 1),
+            ("technical", "mcq", "Which SQL clause filters rows AFTER grouping (e.g. HAVING COUNT(*) > 5)?",
+             "WHERE", "HAVING", "GROUP BY", "ORDER BY", "b", 1),
+            ("technical", "mcq", "What does REST stand for in the context of web APIs?",
+             "Representational State Transfer", "Remote Endpoint Service Type",
+             "Relational External Storage Table", "Real-time Event Streaming Trigger", "a", 1),
+            ("logical", "mcq", "If all Bloops are Razzies and all Razzies are Lazzies, then all Bloops are definitely:",
+             "Lazzies", "Razzies only", "Not Lazzies", "Unrelated to Lazzies", "a", 1),
+            ("quantitative", "mcq", "A train travels 180 km in 3 hours. What is its average speed?",
+             "45 km/h", "60 km/h", "50 km/h", "90 km/h", "b", 1),
+            ("numerical", "mcq", "What is 15% of 240?",
+             "30", "36", "24", "40", "b", 1),
+            ("problem_solving", "mcq", "You need to find a specific value in a sorted array of 1 million "
+             "elements as fast as possible. Which approach is best?",
+             "Linear scan", "Binary search", "Bubble sort then scan", "Random sampling", "b", 1),
+        ]
+        for category, qtype, text, oa, ob, oc, od, correct, marks in a1_questions:
+            IndustryAssessmentQuestion.objects.create(
+                assessment=a1, question_type=qtype, category=category, text=text,
+                option_a=oa, option_b=ob, option_c=oc, option_d=od, correct_option=correct,
+                marks=marks, order=a1.questions.count())
+
+        technova_internship = Internship.objects.filter(company=technova).order_by('id').first()
+        technova_job = Job.objects.filter(company=technova).order_by('id').first()
+        if technova_internship:
+            technova_internship.required_assessment = a1
+            technova_internship.save()
+        if technova_job:
+            technova_job.required_assessment = a1
+            technova_job.save()
+
+        # ---- Assessment 2: Cloudera — Cloud Infrastructure Aptitude Test ----
+        a2 = IndustryAssessment.objects.create(
+            company=cloudera, title="Cloud Infrastructure Aptitude Test",
+            description="Aptitude screening used by Cloudera Systems for cloud engineering internship applicants.",
+            assessment_type="aptitude", duration_minutes=20, passing_score=50, max_attempts=1, active=True)
+        a2_questions = [
+            ("logical", "mcq", "Which number completes the series: 2, 6, 12, 20, 30, ?",
+             "36", "40", "42", "44", "c", 1),
+            ("verbal", "mcq", "Choose the word most nearly OPPOSITE in meaning to 'redundant':",
+             "Excessive", "Essential", "Repetitive", "Obsolete", "b", 1),
+            ("numerical", "mcq", "If a server processes 240 requests per minute, how many does it process in 45 seconds?",
+             "150", "180", "200", "160", "b", 1),
+            ("quantitative", "mcq", "A cloud storage plan costs ₹500 for 100GB. What is the cost per GB?",
+             "₹5", "₹50", "₹0.5", "₹500", "a", 1),
+            ("problem_solving", "mcq", "A distributed system's three replicas disagree on a value. What should it "
+             "generally use to resolve this?",
+             "The oldest replica", "A random replica", "Majority/consensus voting", "The largest value", "c", 1),
+        ]
+        for category, qtype, text, oa, ob, oc, od, correct, marks in a2_questions:
+            IndustryAssessmentQuestion.objects.create(
+                assessment=a2, question_type=qtype, category=category, text=text,
+                option_a=oa, option_b=ob, option_c=oc, option_d=od, correct_option=correct,
+                marks=marks, order=a2.questions.count())
+
+        cloudera_internship = Internship.objects.filter(company=cloudera).order_by('id').first()
+        if cloudera_internship:
+            cloudera_internship.required_assessment = a2
+            cloudera_internship.save()
+
+        # Give a few of the OTHER students (never the demo student) attempt history on
+        # Cloudera's test, so the industry "view results" screen has real, mixed data.
+        other_students = [s for s in students if s != demo_student][:5]
+        a2_question_list = list(a2.questions.all())
+        for s in other_students:
+            correct_ratio = random.uniform(0.2, 1.0)
+            attempt = IndustryAssessmentAttempt.objects.create(assessment=a2, student=s, attempt_number=1)
+            total_marks, scored_marks = 0, 0
+            category_totals = {}
+            for q in a2_question_list:
+                is_correct = random.random() < correct_ratio
+                IndustryAssessmentAnswer.objects.create(
+                    attempt=attempt, question=q,
+                    selected_option=q.correct_option if is_correct else random.choice(['a', 'b', 'c', 'd']),
+                    is_correct=is_correct)
+                total_marks += q.marks
+                scored_marks += q.marks if is_correct else 0
+                bucket = category_totals.setdefault(q.category, {"correct": 0, "total": 0})
+                bucket['total'] += 1
+                if is_correct:
+                    bucket['correct'] += 1
+            percentage = round((scored_marks / total_marks) * 100, 1) if total_marks else 0
+            attempt.total_marks = total_marks
+            attempt.scored_marks = scored_marks
+            attempt.percentage = percentage
+            attempt.passed = percentage >= a2.passing_score
+            attempt.category_breakdown = category_totals
+            attempt.save()
+
+        return {"technova_assessment": a1, "cloudera_assessment": a2}
 
     LEARNING_TEMPLATES = [
         ("React for Modern Web Development", "SkillBridge Learning", "React", "6 weeks", "course"),

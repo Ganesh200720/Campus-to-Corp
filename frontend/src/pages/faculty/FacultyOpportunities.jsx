@@ -50,7 +50,7 @@ export default function FacultyOpportunities() {
         <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><Handshake size={18} /></div>
         <div>
           <h3 className="font-semibold text-slate-800 text-sm">Research Collaboration & Consultancy</h3>
-          <p className="text-sm text-slate-500 mt-1">Industry partners on SkillBridge are actively looking for faculty collaboration on applied research, live projects and technical consultancy. Reach out to your Institution to formalise an MoU with a partner company.</p>
+          <p className="text-sm text-slate-500 mt-1">Industry partners on SkillBridge are actively looking for faculty collaboration on applied research, live projects and technical consultancy. Reach out to Institution Admin to formalise an MoU with a partner company.</p>
         </div>
       </div>
     </div>

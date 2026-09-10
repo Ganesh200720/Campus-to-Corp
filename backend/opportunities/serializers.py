@@ -3,34 +3,72 @@ from .models import Internship, Job, LearningProgram, Application
 from skills.serializers import SkillSerializer
 
 
+class RequiredAssessmentSerializer(serializers.Serializer):
+    """Lightweight nested representation — avoids importing skills.serializers (no circular import)."""
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    assessment_type = serializers.CharField()
+    duration_minutes = serializers.IntegerField()
+    passing_score = serializers.FloatField()
+    max_attempts = serializers.IntegerField()
+
+
 class InternshipSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source='company.company_name', read_only=True)
     required_skills_detail = SkillSerializer(source='required_skills', many=True, read_only=True)
     match_percent = serializers.SerializerMethodField()
+    required_assessment_detail = serializers.SerializerMethodField()
+    assessment_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Internship
         fields = ['id', 'company', 'company_name', 'title', 'description', 'location', 'mode', 'duration',
                    'stipend', 'required_skills', 'required_skills_detail', 'min_cgpa', 'deadline', 'posted_at',
-                   'active', 'match_percent']
+                   'active', 'match_percent', 'required_assessment', 'required_assessment_detail', 'assessment_status']
 
     def get_match_percent(self, obj):
         return self.context.get('match_scores', {}).get(obj.id)
+
+    def get_required_assessment_detail(self, obj):
+        if not obj.required_assessment_id:
+            return None
+        return RequiredAssessmentSerializer(obj.required_assessment).data
+
+    def get_assessment_status(self, obj):
+        request = self.context.get('request')
+        if not obj.required_assessment_id or not request or getattr(request.user, 'role', None) != 'student':
+            return None
+        from skills import services
+        return services.get_assessment_status(request.user, obj.required_assessment)
 
 
 class JobSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source='company.company_name', read_only=True)
     required_skills_detail = SkillSerializer(source='required_skills', many=True, read_only=True)
     match_percent = serializers.SerializerMethodField()
+    required_assessment_detail = serializers.SerializerMethodField()
+    assessment_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Job
         fields = ['id', 'company', 'company_name', 'title', 'description', 'location', 'experience_required',
                    'salary', 'required_skills', 'required_skills_detail', 'min_cgpa', 'deadline', 'posted_at',
-                   'active', 'match_percent']
+                   'active', 'match_percent', 'required_assessment', 'required_assessment_detail', 'assessment_status']
 
     def get_match_percent(self, obj):
         return self.context.get('match_scores', {}).get(obj.id)
+
+    def get_required_assessment_detail(self, obj):
+        if not obj.required_assessment_id:
+            return None
+        return RequiredAssessmentSerializer(obj.required_assessment).data
+
+    def get_assessment_status(self, obj):
+        request = self.context.get('request')
+        if not obj.required_assessment_id or not request or getattr(request.user, 'role', None) != 'student':
+            return None
+        from skills import services
+        return services.get_assessment_status(request.user, obj.required_assessment)
 
 
 class LearningProgramSerializer(serializers.ModelSerializer):

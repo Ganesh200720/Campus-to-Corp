@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import DashboardLayout from './layouts/DashboardLayout'
-import { roleHome } from './utils/roleHome'
 
 import Landing from './pages/Landing'
 import Login from './pages/Login'
@@ -18,6 +17,8 @@ import MyApplications from './pages/student/MyApplications'
 import LearningHub from './pages/student/LearningHub'
 import MockInterview from './pages/student/MockInterview'
 import Portfolio from './pages/student/Portfolio'
+import CompanyAssessments from './pages/student/CompanyAssessments'
+import TakeCompanyAssessment from './pages/student/TakeCompanyAssessment'
 
 import IndustryDashboard from './pages/industry/IndustryDashboard'
 import PostOpportunity from './pages/industry/PostOpportunity'
@@ -25,13 +26,13 @@ import IndustryInternships from './pages/industry/IndustryInternships'
 import IndustryJobs from './pages/industry/IndustryJobs'
 import IndustryApplications from './pages/industry/IndustryApplications'
 import CandidateMatching from './pages/industry/CandidateMatching'
+import IndustryAssessments from './pages/industry/Assessments'
+import AssessmentDetail from './pages/industry/AssessmentDetail'
 
 import FacultyDashboard from './pages/faculty/FacultyDashboard'
 import FacultyOpportunities from './pages/faculty/FacultyOpportunities'
 
-import InstitutionDashboard from './pages/institution/InstitutionDashboard'
-import InstitutionStudents from './pages/institution/InstitutionStudents'
-import InstitutionStudentDetail from './pages/institution/InstitutionStudentDetail'
+import AdminDashboard from './pages/admin/AdminDashboard'
 
 function Wrapped({ role, children }) {
   return (
@@ -45,7 +46,7 @@ function HomeRedirect() {
   const { user, loading } = useAuth()
   if (loading) return null
   if (!user) return <Landing />
-  return <Navigate to={roleHome(user.role)} replace />
+  return <Navigate to={`/${user.role}`} replace />
 }
 
 export default function App() {
@@ -67,6 +68,8 @@ export default function App() {
           <Route path="/student/learning-hub" element={<Wrapped role="student"><LearningHub /></Wrapped>} />
           <Route path="/student/mock-interview" element={<Wrapped role="student"><MockInterview /></Wrapped>} />
           <Route path="/student/portfolio" element={<Wrapped role="student"><Portfolio /></Wrapped>} />
+          <Route path="/student/company-assessments" element={<Wrapped role="student"><CompanyAssessments /></Wrapped>} />
+          <Route path="/student/company-assessments/take/:id" element={<Wrapped role="student"><TakeCompanyAssessment /></Wrapped>} />
 
           <Route path="/industry" element={<Wrapped role="industry"><IndustryDashboard /></Wrapped>} />
           <Route path="/industry/post" element={<Wrapped role="industry"><PostOpportunity /></Wrapped>} />
@@ -74,13 +77,13 @@ export default function App() {
           <Route path="/industry/jobs" element={<Wrapped role="industry"><IndustryJobs /></Wrapped>} />
           <Route path="/industry/applications" element={<Wrapped role="industry"><IndustryApplications /></Wrapped>} />
           <Route path="/industry/candidates" element={<Wrapped role="industry"><CandidateMatching /></Wrapped>} />
+          <Route path="/industry/assessments" element={<Wrapped role="industry"><IndustryAssessments /></Wrapped>} />
+          <Route path="/industry/assessments/:id" element={<Wrapped role="industry"><AssessmentDetail /></Wrapped>} />
 
           <Route path="/faculty" element={<Wrapped role="faculty"><FacultyDashboard /></Wrapped>} />
           <Route path="/faculty/opportunities" element={<Wrapped role="faculty"><FacultyOpportunities /></Wrapped>} />
 
-          <Route path="/institution" element={<Wrapped role="admin"><InstitutionDashboard /></Wrapped>} />
-          <Route path="/institution/students" element={<Wrapped role="admin"><InstitutionStudents /></Wrapped>} />
-          <Route path="/institution/students/:id" element={<Wrapped role="admin"><InstitutionStudentDetail /></Wrapped>} />
+          <Route path="/admin" element={<Wrapped role="admin"><AdminDashboard /></Wrapped>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

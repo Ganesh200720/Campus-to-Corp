@@ -3,6 +3,8 @@ import api from '../../services/api'
 import LoadingState from '../../components/LoadingState'
 import EmptyState from '../../components/EmptyState'
 import MatchBadge from '../../components/MatchBadge'
+import AssessmentBadge from '../../components/AssessmentBadge'
+import AssessmentRequiredModal from '../../components/AssessmentRequiredModal'
 import { Search, MapPin, IndianRupee, FileText, X, CheckCircle2, Briefcase } from 'lucide-react'
 
 export default function Jobs() {
@@ -12,6 +14,7 @@ export default function Jobs() {
   const [selected, setSelected] = useState(null)
   const [applying, setApplying] = useState(false)
   const [appliedIds, setAppliedIds] = useState(new Set())
+  const [blockedInfo, setBlockedInfo] = useState(null)
 
   const load = async () => {
     setLoading(true)
@@ -43,6 +46,14 @@ export default function Jobs() {
       await api.post('/opportunities/apply/', { job_id: id })
       setAppliedIds((s) => new Set([...s, id]))
       setSelected(null)
+    } catch (err) {
+      const data = err.response?.data
+      if (err.response?.status === 403 && data?.code === 'ASSESSMENT_REQUIRED') {
+        setSelected(null)
+        setBlockedInfo(data)
+      } else {
+        throw err
+      }
     } finally {
       setApplying(false)
     }
@@ -83,6 +94,9 @@ export default function Jobs() {
                   <span key={s.id} className="badge bg-slate-100 text-slate-600">{s.name}</span>
                 ))}
               </div>
+              {j.required_assessment_detail && (
+                <div className="mt-2"><AssessmentBadge detail={j.required_assessment_detail} status={j.assessment_status} /></div>
+              )}
               {appliedIds.has(j.id) && (
                 <p className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-3"><CheckCircle2 size={12} /> Applied</p>
               )}
@@ -110,6 +124,13 @@ export default function Jobs() {
               <div><p className="text-xs text-slate-400">Deadline</p><p className="font-medium text-slate-700">{selected.deadline}</p></div>
             </div>
 
+            {selected.required_assessment_detail && (
+              <div className="mt-4">
+                <p className="text-xs text-slate-400 mb-1">Prerequisite</p>
+                <AssessmentBadge detail={selected.required_assessment_detail} status={selected.assessment_status} />
+              </div>
+            )}
+
             {selected.match_explanation && (
               <div className="bg-brand-50 rounded-xl p-4 mt-4">
                 <p className="text-xs font-semibold text-brand-700 mb-2">Why this job is recommended</p>
@@ -131,6 +152,8 @@ export default function Jobs() {
           </div>
         </div>
       )}
+
+      <AssessmentRequiredModal info={blockedInfo} onCancel={() => setBlockedInfo(null)} />
     </div>
   )
 }

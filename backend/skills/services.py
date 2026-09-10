@@ -233,6 +233,20 @@ def compute_placement_readiness(student):
     }
 
 
+def get_assessment_status(student, assessment):
+    """Return the student's status against an IndustryAssessment:
+    'not_attempted' | 'failed' | 'passed', plus best attempt info."""
+    from .models import IndustryAssessmentAttempt
+
+    attempts = IndustryAssessmentAttempt.objects.filter(student=student, assessment=assessment).order_by('-percentage')
+    if not attempts.exists():
+        return {"status": "not_attempted", "attempts_used": 0, "best_percentage": None}
+    best = attempts.first()
+    attempts_used = IndustryAssessmentAttempt.objects.filter(student=student, assessment=assessment).count()
+    status = "passed" if best.passed else "failed"
+    return {"status": status, "attempts_used": attempts_used, "best_percentage": best.percentage}
+
+
 def industry_skill_demand():
     """Aggregate required_skills across all active internships & jobs -> demand %."""
     from opportunities.models import Internship, Job

@@ -27,6 +27,10 @@ class Internship(models.Model):
     deadline = models.DateField()
     posted_at = models.DateTimeField(auto_now_add=True)
     active = models.BooleanField(default=True)
+    required_assessment = models.ForeignKey(
+        'skills.IndustryAssessment', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='internships',
+        help_text="If set, a student must pass this assessment before they can apply.")
 
     def __str__(self):
         return f"{self.title} @ {self.company.company_name}"
@@ -44,6 +48,10 @@ class Job(models.Model):
     deadline = models.DateField()
     posted_at = models.DateTimeField(auto_now_add=True)
     active = models.BooleanField(default=True)
+    required_assessment = models.ForeignKey(
+        'skills.IndustryAssessment', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='jobs',
+        help_text="If set, a student must pass this assessment before they can apply.")
 
     def __str__(self):
         return f"{self.title} @ {self.company.company_name}"

@@ -11,6 +11,7 @@ const NAV = {
     { to: '/student', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/student/profile', label: 'My Profile', icon: User },
     { to: '/student/assessment', label: 'Skill Assessment', icon: ClipboardCheck },
+    { to: '/student/company-assessments', label: 'Company Assessments', icon: Building2 },
     { to: '/student/skill-analysis', label: 'Skill Analysis', icon: BarChart3 },
     { to: '/student/career-guidance', label: 'Career Guidance', icon: Compass },
     { to: '/student/internships', label: 'Internships', icon: Briefcase },
@@ -23,6 +24,7 @@ const NAV = {
   industry: [
     { to: '/industry', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/industry/post', label: 'Post Opportunity', icon: PlusCircle },
+    { to: '/industry/assessments', label: 'Assessments', icon: ClipboardCheck },
     { to: '/industry/internships', label: 'My Internships', icon: Briefcase },
     { to: '/industry/jobs', label: 'My Jobs', icon: FileText },
     { to: '/industry/applications', label: 'Applications', icon: ListChecks },
@@ -33,13 +35,12 @@ const NAV = {
     { to: '/faculty/opportunities', label: 'Opportunities', icon: Presentation },
   ],
   admin: [
-    { to: '/institution', label: 'Institution Analytics', icon: BarChart3, end: true },
-    { to: '/institution/students', label: 'Student Directory', icon: Users },
+    { to: '/admin', label: 'Institution Analytics', icon: BarChart3, end: true },
   ],
 }
 
 const ROLE_LABEL = {
-  student: 'Student', industry: 'Industry Partner', faculty: 'Faculty', admin: 'Institution',
+  student: 'Student', industry: 'Industry Partner', faculty: 'Faculty', admin: 'Institution Admin',
 }
 
 export default function DashboardLayout({ children }) {
