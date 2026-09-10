@@ -23,12 +23,22 @@ import PostOpportunity from './pages/industry/PostOpportunity'
 import IndustryInternships from './pages/industry/IndustryInternships'
 import IndustryJobs from './pages/industry/IndustryJobs'
 import IndustryApplications from './pages/industry/IndustryApplications'
+import PostCollaboration from './pages/industry/PostCollaboration'
 import CandidateMatching from './pages/industry/CandidateMatching'
 
 import FacultyDashboard from './pages/faculty/FacultyDashboard'
 import FacultyOpportunities from './pages/faculty/FacultyOpportunities'
 
 import AdminDashboard from './pages/admin/AdminDashboard'
+
+import FacultyCollaborations from './pages/faculty/Collaborations'
+import MyCollaborations from './pages/faculty/MyCollaborations'
+import CollaborationRequests from './pages/industry/CollaborationRequests'
+import IndustryMyCollaborations from './pages/industry/MyCollaborations'
+
+import AdminCollaborations from './pages/admin/Collaborations'
+import AdminMyCollaborations from './pages/admin/MyCollaborations'
+import Candidates from './pages/industry/Candidates'
 
 function Wrapped({ role, children }) {
   return (
@@ -66,18 +76,90 @@ export default function App() {
           <Route path="/student/portfolio" element={<Wrapped role="student"><Portfolio /></Wrapped>} />
 
           <Route path="/industry" element={<Wrapped role="industry"><IndustryDashboard /></Wrapped>} />
-          <Route path="/industry/post" element={<Wrapped role="industry"><PostOpportunity /></Wrapped>} />
+          <Route
+            path="/industry/post-opportunity"
+            element={
+              <Wrapped role="industry">
+                <PostOpportunity />
+              </Wrapped>
+            }
+          />
           <Route path="/industry/internships" element={<Wrapped role="industry"><IndustryInternships /></Wrapped>} />
           <Route path="/industry/jobs" element={<Wrapped role="industry"><IndustryJobs /></Wrapped>} />
           <Route path="/industry/applications" element={<Wrapped role="industry"><IndustryApplications /></Wrapped>} />
-          <Route path="/industry/candidates" element={<Wrapped role="industry"><CandidateMatching /></Wrapped>} />
+          <Route path="/industry/candidate-matching" element={<Wrapped role="industry"><CandidateMatching /></Wrapped>} />
+          <Route
+            path="/industry/post-collaboration"
+            element={
+              <Wrapped role="industry">
+                <PostCollaboration />
+              </Wrapped>
+            }
+          />
+          <Route
+            path="/industry/my-collaborations"
+            element={
+              <Wrapped role="industry">
+                <IndustryMyCollaborations />
+              </Wrapped>
+            }
+          />
+          <Route
+            path="/industry/collaboration-requests"
+            element={
+              <Wrapped role="industry">
+                <CollaborationRequests />
+              </Wrapped>
+            }
+          />
+          <Route
+            path="/industry/candidates"
+            element={
+              <ProtectedRoute allowedRoles={['industry']}>
+                <Candidates />
+              </ProtectedRoute>
+            }
+          />
 
           <Route path="/faculty" element={<Wrapped role="faculty"><FacultyDashboard /></Wrapped>} />
           <Route path="/faculty/opportunities" element={<Wrapped role="faculty"><FacultyOpportunities /></Wrapped>} />
+          <Route
+            path="/faculty/collaborations"
+            element={
+              <Wrapped role="faculty">
+                <FacultyCollaborations />
+              </Wrapped>
+            }
+          />
+          <Route
+            path="/faculty/my-collaborations"
+            element={
+              <Wrapped role="faculty">
+                <MyCollaborations />
+              </Wrapped>
+            }
+          />
 
           <Route path="/admin" element={<Wrapped role="admin"><AdminDashboard /></Wrapped>} />
+          <Route
+            path="/admin/collaborations"
+            element={
+              <Wrapped role="admin">
+                <AdminCollaborations />
+              </Wrapped>
+            }
+          />
+          <Route
+            path="/admin/my-collaborations"
+            element={
+              <Wrapped role="admin">
+                <AdminMyCollaborations />
+              </Wrapped>
+            }
+          />
 
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </AuthProvider>
     </BrowserRouter>
