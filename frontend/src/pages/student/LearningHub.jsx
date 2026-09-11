@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   TrendingUp,
   Clock,
+  ExternalLink,
 } from 'lucide-react'
 
 const TYPE_ICON = {
@@ -162,6 +163,7 @@ export default function LearningHub() {
               className="w-full appearance-none rounded border border-slate-300 bg-white px-3.5 py-2 pr-10 text-xs font-medium text-slate-800 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             >
               <option value="">Select a job role</option>
+
               {roles.map((role) => (
                 <option key={role} value={role}>
                   {role}
@@ -223,16 +225,16 @@ export default function LearningHub() {
 
                 const current = Number(
                   skill.current_score ??
-                  skill.current ??
-                  skill.score ??
-                  0
+                    skill.current ??
+                    skill.score ??
+                    0
                 )
 
                 const required = Number(
                   skill.required_score ??
-                  skill.required ??
-                  skill.target ??
-                  0
+                    skill.required ??
+                    skill.target ??
+                    0
                 )
 
                 const safeCurrent = Math.max(0, Math.min(100, current))
@@ -269,6 +271,7 @@ export default function LearningHub() {
                           <p className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
                             Your Level
                           </p>
+
                           <p className="font-mono text-base font-bold text-slate-900 mt-0.5">
                             {safeCurrent}%
                           </p>
@@ -278,6 +281,7 @@ export default function LearningHub() {
                           <p className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
                             Required
                           </p>
+
                           <p className="font-mono text-base font-bold text-slate-900 mt-0.5">
                             {safeRequired}%
                           </p>
@@ -422,6 +426,26 @@ export default function LearningHub() {
                       <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
                         {p.description}
                       </p>
+                    )}
+
+                    {/* Open Learning Resource */}
+                    {p.url && (
+                      <a
+                        href={p.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 w-full rounded border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100 hover:border-indigo-400"
+                      >
+                        <span>
+                          {p.provider === 'YouTube'
+                            ? 'Learn on YouTube'
+                            : p.provider === 'Coursera'
+                              ? 'View on Coursera'
+                              : 'Open Resource'}
+                        </span>
+
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
                     )}
                   </div>
                 </article>

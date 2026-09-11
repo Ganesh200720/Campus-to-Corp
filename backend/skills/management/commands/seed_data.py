@@ -442,26 +442,118 @@ class Command(BaseCommand):
         return {"technova_assessment": a1, "cloudera_assessment": a2}
 
     LEARNING_TEMPLATES = [
-        ("React for Modern Web Development", "SkillBridge Learning", "React", "6 weeks", "course"),
-        ("AWS Cloud Practitioner Fundamentals", "CloudAcademy Partner", "AWS", "4 weeks", "certification"),
-        ("Python for Data Science", "SkillBridge Learning", "Python", "8 weeks", "course"),
-        ("Mastering SQL for Analysts", "SkillBridge Learning", "SQL", "3 weeks", "course"),
-        ("Machine Learning Foundations", "DataForge Academy", "Machine Learning", "10 weeks", "course"),
-        ("Docker & Containers Bootcamp", "CloudAcademy Partner", "Docker", "2 weeks", "workshop"),
-        ("Effective Technical Communication", "SkillBridge Learning", "Communication", "2 weeks", "workshop"),
-        ("Advanced JavaScript & TypeScript", "SkillBridge Learning", "TypeScript", "5 weeks", "course"),
-        ("System Design Interview Prep", "TechNova Mentorship", "System Design", "4 weeks", "mentorship"),
-        ("Statistics for Data-Driven Decisions", "SkillBridge Learning", "Statistics", "4 weeks", "course"),
-        ("Cybersecurity Essentials", "SkillBridge Learning", "Cybersecurity Basics", "3 weeks", "certification"),
-        ("Leadership for Young Engineers", "Quantum Byte Mentorship", "Leadership", "3 weeks", "mentorship"),
+        (
+            "React for Modern Web Development",
+            "YouTube",
+            "React",
+            "6 weeks",
+            "course",
+            "https://www.youtube.com/results?search_query=React+full+course+for+beginners"
+        ),
+        (
+            "AWS Cloud Practitioner Fundamentals",
+            "Coursera",
+            "AWS",
+            "4 weeks",
+            "certification",
+            "https://www.coursera.org/search?query=AWS%20Cloud%20Practitioner"
+        ),
+        (
+            "Python for Data Science",
+            "Coursera",
+            "Python",
+            "8 weeks",
+            "course",
+            "https://www.coursera.org/search?query=Python%20for%20Data%20Science"
+        ),
+        (
+            "Mastering SQL for Analysts",
+            "YouTube",
+            "SQL",
+            "3 weeks",
+            "course",
+            "https://www.youtube.com/results?search_query=SQL+full+course+for+beginners"
+        ),
+        (
+            "Machine Learning Foundations",
+            "Coursera",
+            "Machine Learning",
+            "10 weeks",
+            "course",
+            "https://www.coursera.org/search?query=Machine%20Learning%20Foundations"
+        ),
+        (
+            "Docker & Containers Bootcamp",
+            "YouTube",
+            "Docker",
+            "2 weeks",
+            "workshop",
+            "https://www.youtube.com/results?search_query=Docker+full+course+for+beginners"
+        ),
+        (
+            "Effective Technical Communication",
+            "Coursera",
+            "Communication",
+            "2 weeks",
+            "workshop",
+            "https://www.coursera.org/search?query=technical%20communication"
+        ),
+        (
+            "Advanced JavaScript & TypeScript",
+            "YouTube",
+            "TypeScript",
+            "5 weeks",
+            "course",
+            "https://www.youtube.com/results?search_query=JavaScript+TypeScript+full+course"
+        ),
+        (
+            "System Design Interview Prep",
+            "YouTube",
+            "System Design",
+            "4 weeks",
+            "mentorship",
+            "https://www.youtube.com/results?search_query=system+design+interview+preparation"
+        ),
+        (
+            "Statistics for Data-Driven Decisions",
+            "Coursera",
+            "Statistics",
+            "4 weeks",
+            "course",
+            "https://www.coursera.org/search?query=statistics%20for%20data%20science"
+        ),
+        (
+            "Cybersecurity Essentials",
+            "Coursera",
+            "Cybersecurity Basics",
+            "3 weeks",
+            "certification",
+            "https://www.coursera.org/search?query=cybersecurity%20essentials"
+        ),
+        (
+            "Leadership for Young Engineers",
+            "YouTube",
+            "Leadership",
+            "3 weeks",
+            "mentorship",
+            "https://www.youtube.com/results?search_query=leadership+skills+for+engineers"
+        ),
     ]
 
     def _create_learning_programs(self, skills):
-        for title, provider, skill_name, duration, ptype in self.LEARNING_TEMPLATES:
+        for title, provider, skill_name, duration, ptype, url in self.LEARNING_TEMPLATES:
             LearningProgram.objects.create(
-                title=title, provider=provider, skill=skills[skill_name], duration=duration, program_type=ptype,
-                description=f"A focused {duration} program to strengthen your {skill_name} proficiency, "
-                             f"aligned with current industry expectations.")
+                title=title,
+                provider=provider,
+                skill=skills[skill_name],
+                duration=duration,
+                program_type=ptype,
+                url=url,
+                description=(
+                    f"A focused {duration} program to strengthen your {skill_name} proficiency, "
+                    f"aligned with current industry expectations."
+                )
+            )
 
     PROJECT_TEMPLATES = [
         ("Campus Event Management System", "Django, React, PostgreSQL", "Full-stack platform for managing college fests and event registrations."),

@@ -165,18 +165,55 @@ class LearningProgramListView(APIView):
         qs = LearningProgram.objects.select_related('skill').all()
         personalized = request.query_params.get('personalized')
         result = []
+
         if personalized and request.user.role == 'student':
             scores = services.get_student_skill_map(request.user)
+
             for p in qs:
-                current = scores.get(p.skill.name, 0)
-                if current < 60:
-                    reason = f"{p.skill.name} proficiency is below the level required by most matched roles."
-                    result.append({**LearningProgramSerializer(p).data, "reason": reason, "current_score": current})
-            result.sort(key=lambda x: x['current_score'])
+                current = round(scores.get(p.skill.name, 0), 1)
+
+                # Find the student's gap for this learning program's skill
+                matching_gap = None
+
+                # Check all known role profiles for the skill requirement
+                for role_name, profile in services.ROLE_PROFILES.items():
+                    if p.skill.name in profile:
+                        required = profile[p.skill.name]
+                        gap = max(round(required - current, 1), 0)
+
+                        if gap > 0:
+                            if matching_gap is None or gap > matching_gap["gap"]:
+                                matching_gap = {
+                                    "role": role_name,
+                                    "required": required,
+                                    "gap": gap,
+                                }
+
+                # Recommend only when there is an actual skill gap
+                if matching_gap:
+                    reason = (
+                        f"Recommended because your {p.skill.name} skill is currently "
+                        f"{current}%, while {matching_gap['role']} requires around "
+                        f"{matching_gap['required']}%. You have a "
+                        f"{matching_gap['gap']}-point skill gap to improve."
+                    )
+
+                    result.append({
+                        **LearningProgramSerializer(p).data,
+                        "reason": reason,
+                        "current_score": current,
+                        "required_score": matching_gap["required"],
+                        "gap": matching_gap["gap"],
+                        "target_role": matching_gap["role"],
+                    })
+
+            # Show the biggest gaps first
+            result.sort(key=lambda x: -x['gap'])
+
         else:
             result = LearningProgramSerializer(qs, many=True).data
-        return Response(result)
 
+        return Response(result)
 
 # ---------------- Industry side ----------------
 
