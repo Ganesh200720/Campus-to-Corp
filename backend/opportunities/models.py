@@ -13,7 +13,7 @@ class RequiredSkill(models.Model):
         abstract = True
 
 
-class Internship(models.Model):
+class Internship(models.Model):  
     MODE_CHOICES = [
         ('remote', 'Remote'),
         ('hybrid', 'Hybrid'),
@@ -118,10 +118,12 @@ class LearningProgram(models.Model):
 
 class Application(models.Model):
     STATUS_CHOICES = [
+        ('invited', 'Invited'),
         ('applied', 'Applied'),
         ('under_review', 'Under Review'),
         ('shortlisted', 'Shortlisted'),
         ('interview', 'Interview'),
+        ('accepted', 'Accepted'),
         ('selected', 'Selected'),
         ('rejected', 'Rejected'),
     ]

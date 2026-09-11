@@ -6,7 +6,12 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
 from .models import Internship, Job, LearningProgram, Application
-from .serializers import InternshipSerializer, JobSerializer, LearningProgramSerializer, ApplicationSerializer
+from .serializers import (
+    InternshipSerializer,
+    JobSerializer,
+    LearningProgramSerializer,
+    ApplicationSerializer,
+)
 from skills import services
 
 
@@ -26,31 +31,65 @@ class InternshipListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        qs = Internship.objects.filter(active=True).select_related('company').prefetch_related('required_skills')
+        qs = (
+            Internship.objects
+            .filter(active=True)
+            .select_related('company')
+            .prefetch_related('required_skills')
+        )
+
         search = request.query_params.get('search')
         mode = request.query_params.get('mode')
         location = request.query_params.get('location')
+
         if search:
-            qs = qs.filter(Q(title__icontains=search) | Q(company__company_name__icontains=search))
+            qs = qs.filter(
+                Q(title__icontains=search) |
+                Q(company__company_name__icontains=search)
+            )
+
         if mode:
             qs = qs.filter(mode=mode)
+
         if location:
             qs = qs.filter(location__icontains=location)
 
         match_scores = {}
+
         if request.user.role == 'student':
             cgpa = _student_cgpa(request.user)
             interest = _student_interest(request.user)
+
             for i in qs:
                 skill_names = [s.name for s in i.required_skills.all()]
-                m = services.compute_opportunity_match(request.user, skill_names, i.min_cgpa, cgpa, interest, i.title)
+
+                m = services.compute_opportunity_match(
+                    request.user,
+                    skill_names,
+                    i.min_cgpa,
+                    cgpa,
+                    interest,
+                    i.title
+                )
+
                 match_scores[i.id] = m['match_percent']
 
         ordering = request.query_params.get('sort')
         items = list(qs)
-        if request.user.role == 'student' and (ordering == 'match' or not ordering):
-            items.sort(key=lambda x: -match_scores.get(x.id, 0))
-        serializer = InternshipSerializer(items, many=True, context={'match_scores': match_scores})
+
+        if request.user.role == 'student' and (
+            ordering == 'match' or not ordering
+        ):
+            items.sort(
+                key=lambda x: -match_scores.get(x.id, 0)
+            )
+
+        serializer = InternshipSerializer(
+            items,
+            many=True,
+            context={'match_scores': match_scores}
+        )
+
         return Response(serializer.data)
 
 
@@ -58,18 +97,41 @@ class InternshipDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
-        internship = get_object_or_404(Internship, pk=pk)
+        internship = get_object_or_404(
+            Internship,
+            pk=pk
+        )
+
         match_scores = {}
         explanation = None
+
         if request.user.role == 'student':
             cgpa = _student_cgpa(request.user)
             interest = _student_interest(request.user)
-            skill_names = [s.name for s in internship.required_skills.all()]
-            m = services.compute_opportunity_match(request.user, skill_names, internship.min_cgpa, cgpa, interest, internship.title)
+
+            skill_names = [
+                s.name for s in internship.required_skills.all()
+            ]
+
+            m = services.compute_opportunity_match(
+                request.user,
+                skill_names,
+                internship.min_cgpa,
+                cgpa,
+                interest,
+                internship.title
+            )
+
             match_scores[internship.id] = m['match_percent']
             explanation = m
-        data = InternshipSerializer(internship, context={'match_scores': match_scores}).data
+
+        data = InternshipSerializer(
+            internship,
+            context={'match_scores': match_scores}
+        ).data
+
         data['match_explanation'] = explanation
+
         return Response(data)
 
 
@@ -77,27 +139,58 @@ class JobListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        qs = Job.objects.filter(active=True).select_related('company').prefetch_related('required_skills')
+        qs = (
+            Job.objects
+            .filter(active=True)
+            .select_related('company')
+            .prefetch_related('required_skills')
+        )
+
         search = request.query_params.get('search')
         location = request.query_params.get('location')
+
         if search:
-            qs = qs.filter(Q(title__icontains=search) | Q(company__company_name__icontains=search))
+            qs = qs.filter(
+                Q(title__icontains=search) |
+                Q(company__company_name__icontains=search)
+            )
+
         if location:
             qs = qs.filter(location__icontains=location)
 
         match_scores = {}
+
         if request.user.role == 'student':
             cgpa = _student_cgpa(request.user)
             interest = _student_interest(request.user)
+
             for j in qs:
                 skill_names = [s.name for s in j.required_skills.all()]
-                m = services.compute_opportunity_match(request.user, skill_names, j.min_cgpa, cgpa, interest, j.title)
+
+                m = services.compute_opportunity_match(
+                    request.user,
+                    skill_names,
+                    j.min_cgpa,
+                    cgpa,
+                    interest,
+                    j.title
+                )
+
                 match_scores[j.id] = m['match_percent']
 
         items = list(qs)
+
         if request.user.role == 'student':
-            items.sort(key=lambda x: -match_scores.get(x.id, 0))
-        serializer = JobSerializer(items, many=True, context={'match_scores': match_scores})
+            items.sort(
+                key=lambda x: -match_scores.get(x.id, 0)
+            )
+
+        serializer = JobSerializer(
+            items,
+            many=True,
+            context={'match_scores': match_scores}
+        )
+
         return Response(serializer.data)
 
 
@@ -105,18 +198,41 @@ class JobDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
-        job = get_object_or_404(Job, pk=pk)
+        job = get_object_or_404(
+            Job,
+            pk=pk
+        )
+
         match_scores = {}
         explanation = None
+
         if request.user.role == 'student':
             cgpa = _student_cgpa(request.user)
             interest = _student_interest(request.user)
-            skill_names = [s.name for s in job.required_skills.all()]
-            m = services.compute_opportunity_match(request.user, skill_names, job.min_cgpa, cgpa, interest, job.title)
+
+            skill_names = [
+                s.name for s in job.required_skills.all()
+            ]
+
+            m = services.compute_opportunity_match(
+                request.user,
+                skill_names,
+                job.min_cgpa,
+                cgpa,
+                interest,
+                job.title
+            )
+
             match_scores[job.id] = m['match_percent']
             explanation = m
-        data = JobSerializer(job, context={'match_scores': match_scores}).data
+
+        data = JobSerializer(
+            job,
+            context={'match_scores': match_scores}
+        ).data
+
         data['match_explanation'] = explanation
+
         return Response(data)
 
 
@@ -126,27 +242,88 @@ class ApplyView(APIView):
     def post(self, request):
         internship_id = request.data.get('internship_id')
         job_id = request.data.get('job_id')
+
         cgpa = _student_cgpa(request.user)
         interest = _student_interest(request.user)
 
         if internship_id:
-            internship = get_object_or_404(Internship, pk=internship_id)
-            if Application.objects.filter(student=request.user, internship=internship).exists():
-                return Response({"detail": "Already applied."}, status=400)
-            skill_names = [s.name for s in internship.required_skills.all()]
-            m = services.compute_opportunity_match(request.user, skill_names, internship.min_cgpa, cgpa, interest, internship.title)
-            app = Application.objects.create(student=request.user, internship=internship, match_score=m['match_percent'])
-        elif job_id:
-            job = get_object_or_404(Job, pk=job_id)
-            if Application.objects.filter(student=request.user, job=job).exists():
-                return Response({"detail": "Already applied."}, status=400)
-            skill_names = [s.name for s in job.required_skills.all()]
-            m = services.compute_opportunity_match(request.user, skill_names, job.min_cgpa, cgpa, interest, job.title)
-            app = Application.objects.create(student=request.user, job=job, match_score=m['match_percent'])
-        else:
-            return Response({"detail": "internship_id or job_id required."}, status=400)
+            internship = get_object_or_404(
+                Internship,
+                pk=internship_id
+            )
 
-        return Response(ApplicationSerializer(app).data, status=201)
+            if Application.objects.filter(
+                student=request.user,
+                internship=internship
+            ).exists():
+                return Response(
+                    {"detail": "Already applied."},
+                    status=400
+                )
+
+            skill_names = [
+                s.name for s in internship.required_skills.all()
+            ]
+
+            m = services.compute_opportunity_match(
+                request.user,
+                skill_names,
+                internship.min_cgpa,
+                cgpa,
+                interest,
+                internship.title
+            )
+
+            app = Application.objects.create(
+                student=request.user,
+                internship=internship,
+                match_score=m['match_percent']
+            )
+
+        elif job_id:
+            job = get_object_or_404(
+                Job,
+                pk=job_id
+            )
+
+            if Application.objects.filter(
+                student=request.user,
+                job=job
+            ).exists():
+                return Response(
+                    {"detail": "Already applied."},
+                    status=400
+                )
+
+            skill_names = [
+                s.name for s in job.required_skills.all()
+            ]
+
+            m = services.compute_opportunity_match(
+                request.user,
+                skill_names,
+                job.min_cgpa,
+                cgpa,
+                interest,
+                job.title
+            )
+
+            app = Application.objects.create(
+                student=request.user,
+                job=job,
+                match_score=m['match_percent']
+            )
+
+        else:
+            return Response(
+                {"detail": "internship_id or job_id required."},
+                status=400
+            )
+
+        return Response(
+            ApplicationSerializer(app).data,
+            status=201
+        )
 
 
 class MyApplicationsView(generics.ListAPIView):
@@ -154,8 +331,68 @@ class MyApplicationsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Application.objects.filter(student=self.request.user).select_related(
-            'internship', 'internship__company', 'job', 'job__company').order_by('-applied_at')
+        return (
+            Application.objects
+            .filter(student=self.request.user)
+            .select_related(
+                'internship',
+                'internship__company',
+                'job',
+                'job__company'
+            )
+            .order_by('-applied_at')
+        )
+
+
+class RespondToInvitationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        app = get_object_or_404(
+            Application.objects.select_related(
+                'internship',
+                'job'
+            ),
+            pk=pk
+        )
+
+        if app.student != request.user:
+            return Response(
+                {"detail": "Not authorized."},
+                status=403
+            )
+
+        if app.status != 'invited':
+            return Response(
+                {
+                    "detail":
+                    "This application is not a pending invitation."
+                },
+                status=400
+            )
+
+        response = request.data.get('response')
+
+        if response == 'accept':
+            app.status = 'accepted'
+
+        elif response == 'reject':
+            app.status = 'rejected'
+
+        else:
+            return Response(
+                {
+                    "detail":
+                    "response must be 'accept' or 'reject'."
+                },
+                status=400
+            )
+
+        app.save(update_fields=['status'])
+
+        return Response(
+            ApplicationSerializer(app).data
+        )
 
 
 class LearningProgramListView(APIView):
@@ -163,6 +400,7 @@ class LearningProgramListView(APIView):
 
     def get(self, request):
         qs = LearningProgram.objects.select_related('skill').all()
+
         personalized = request.query_params.get('personalized')
         result = []
 
@@ -170,30 +408,38 @@ class LearningProgramListView(APIView):
             scores = services.get_student_skill_map(request.user)
 
             for p in qs:
-                current = round(scores.get(p.skill.name, 0), 1)
+                current = round(
+                    scores.get(p.skill.name, 0),
+                    1
+                )
 
-                # Find the student's gap for this learning program's skill
                 matching_gap = None
 
-                # Check all known role profiles for the skill requirement
                 for role_name, profile in services.ROLE_PROFILES.items():
                     if p.skill.name in profile:
                         required = profile[p.skill.name]
-                        gap = max(round(required - current, 1), 0)
+
+                        gap = max(
+                            round(required - current, 1),
+                            0
+                        )
 
                         if gap > 0:
-                            if matching_gap is None or gap > matching_gap["gap"]:
+                            if (
+                                matching_gap is None
+                                or gap > matching_gap["gap"]
+                            ):
                                 matching_gap = {
                                     "role": role_name,
                                     "required": required,
                                     "gap": gap,
                                 }
 
-                # Recommend only when there is an actual skill gap
                 if matching_gap:
                     reason = (
-                        f"Recommended because your {p.skill.name} skill is currently "
-                        f"{current}%, while {matching_gap['role']} requires around "
+                        f"Recommended because your {p.skill.name} "
+                        f"skill is currently {current}%, while "
+                        f"{matching_gap['role']} requires around "
                         f"{matching_gap['required']}%. You have a "
                         f"{matching_gap['gap']}-point skill gap to improve."
                     )
@@ -207,13 +453,18 @@ class LearningProgramListView(APIView):
                         "target_role": matching_gap["role"],
                     })
 
-            # Show the biggest gaps first
-            result.sort(key=lambda x: -x['gap'])
+            result.sort(
+                key=lambda x: -x['gap']
+            )
 
         else:
-            result = LearningProgramSerializer(qs, many=True).data
+            result = LearningProgramSerializer(
+                qs,
+                many=True
+            ).data
 
         return Response(result)
+
 
 # ---------------- Industry side ----------------
 
@@ -221,44 +472,87 @@ class MyInternshipsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        qs = Internship.objects.filter(company__user=request.user).prefetch_related('required_skills')
-        return Response(InternshipSerializer(qs, many=True).data)
+        qs = (
+            Internship.objects
+            .filter(company__user=request.user)
+            .prefetch_related('required_skills')
+        )
+
+        return Response(
+            InternshipSerializer(qs, many=True).data
+        )
 
     def post(self, request):
         profile = request.user.industry_profile
         data = request.data
+
         internship = Internship.objects.create(
-            company=profile, title=data['title'], description=data.get('description', ''),
-            location=data.get('location', ''), mode=data.get('mode', 'hybrid'),
-            duration=data.get('duration', '3 months'), stipend=data.get('stipend', 'Unpaid'),
-            min_cgpa=data.get('min_cgpa', 6.0), deadline=data.get('deadline'),
+            company=profile,
+            title=data['title'],
+            description=data.get('description', ''),
+            location=data.get('location', ''),
+            mode=data.get('mode', 'hybrid'),
+            duration=data.get('duration', '3 months'),
+            stipend=data.get('stipend', 'Unpaid'),
+            min_cgpa=data.get('min_cgpa', 6.0),
+            deadline=data.get('deadline'),
         )
+
         skill_ids = data.get('required_skills', [])
+
         if skill_ids:
             internship.required_skills.set(skill_ids)
-        return Response(InternshipSerializer(internship).data, status=201)
+
+        return Response(
+            InternshipSerializer(internship).data,
+            status=201
+        )
 
 
 class MyJobsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        qs = Job.objects.filter(company__user=request.user).prefetch_related('required_skills')
-        return Response(JobSerializer(qs, many=True).data)
+        qs = (
+            Job.objects
+            .filter(company__user=request.user)
+            .prefetch_related('required_skills')
+        )
+
+        return Response(
+            JobSerializer(qs, many=True).data
+        )
 
     def post(self, request):
         profile = request.user.industry_profile
         data = request.data
+
         job = Job.objects.create(
-            company=profile, title=data['title'], description=data.get('description', ''),
-            location=data.get('location', ''), experience_required=data.get('experience_required', '0-1 years'),
-            salary=data.get('salary', 'As per industry standards'), min_cgpa=data.get('min_cgpa', 6.0),
+            company=profile,
+            title=data['title'],
+            description=data.get('description', ''),
+            location=data.get('location', ''),
+            experience_required=data.get(
+                'experience_required',
+                '0-1 years'
+            ),
+            salary=data.get(
+                'salary',
+                'As per industry standards'
+            ),
+            min_cgpa=data.get('min_cgpa', 6.0),
             deadline=data.get('deadline'),
         )
+
         skill_ids = data.get('required_skills', [])
+
         if skill_ids:
             job.required_skills.set(skill_ids)
-        return Response(JobSerializer(job).data, status=201)
+
+        return Response(
+            JobSerializer(job).data,
+            status=201
+        )
 
 
 class IndustryApplicationsView(generics.ListAPIView):
@@ -266,57 +560,256 @@ class IndustryApplicationsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Application.objects.filter(
-            Q(internship__company__user=self.request.user) | Q(job__company__user=self.request.user)
-        ).select_related('student', 'student__student_profile', 'internship', 'job').order_by('-applied_at')
+        return (
+            Application.objects
+            .filter(
+                Q(
+                    internship__company__user=self.request.user
+                ) |
+                Q(
+                    job__company__user=self.request.user
+                )
+            )
+            .select_related(
+                'student',
+                'student__student_profile',
+                'internship',
+                'job'
+            )
+            .order_by('-applied_at')
+        )
 
 
 class UpdateApplicationStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, pk):
-        app = get_object_or_404(Application, pk=pk)
-        owner = app.internship.company.user if app.internship else app.job.company.user
+        app = get_object_or_404(
+            Application,
+            pk=pk
+        )
+
+        owner = (
+            app.internship.company.user
+            if app.internship
+            else app.job.company.user
+        )
+
         if owner != request.user:
-            return Response({"detail": "Not authorized."}, status=403)
+            return Response(
+                {"detail": "Not authorized."},
+                status=403
+            )
+
         status_val = request.data.get('status')
+
         if status_val not in dict(Application.STATUS_CHOICES):
-            return Response({"detail": "Invalid status."}, status=400)
+            return Response(
+                {"detail": "Invalid status."},
+                status=400
+            )
+
         app.status = status_val
         app.save()
-        return Response(ApplicationSerializer(app).data)
+
+        return Response(
+            ApplicationSerializer(app).data
+        )
+
+
+class InviteCandidateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        student_id = request.data.get('student_id')
+        internship_id = request.data.get('internship_id')
+        job_id = request.data.get('job_id')
+
+        if not student_id:
+            return Response(
+                {"detail": "student_id required."},
+                status=400
+            )
+
+        if bool(internship_id) == bool(job_id):
+            return Response(
+                {"detail": "Provide either internship_id or job_id."},
+                status=400
+            )
+
+        from accounts.models import User
+
+        student = get_object_or_404(
+            User,
+            pk=student_id,
+            role='student'
+        )
+
+        if internship_id:
+            opportunity = get_object_or_404(
+                Internship,
+                pk=internship_id
+            )
+
+            if opportunity.company.user != request.user:
+                return Response(
+                    {
+                        "detail":
+                        "Not authorized for this internship."
+                    },
+                    status=403
+                )
+
+            existing = Application.objects.filter(
+                student=student,
+                internship=opportunity
+            ).first()
+
+            if existing:
+                return Response(
+                    {
+                        "detail":
+                        "An application or invitation already exists.",
+                        "status": existing.status
+                    },
+                    status=400
+                )
+
+            skill_names = [
+                s.name for s in opportunity.required_skills.all()
+            ]
+
+            cgpa = _student_cgpa(student)
+            interest = _student_interest(student)
+
+            match = services.compute_opportunity_match(
+                student,
+                skill_names,
+                opportunity.min_cgpa,
+                cgpa,
+                interest,
+                opportunity.title
+            )
+
+            app = Application.objects.create(
+                student=student,
+                internship=opportunity,
+                status='invited',
+                match_score=match['match_percent']
+            )
+
+        else:
+            opportunity = get_object_or_404(
+                Job,
+                pk=job_id
+            )
+
+            if opportunity.company.user != request.user:
+                return Response(
+                    {
+                        "detail":
+                        "Not authorized for this job."
+                    },
+                    status=403
+                )
+
+            existing = Application.objects.filter(
+                student=student,
+                job=opportunity
+            ).first()
+
+            if existing:
+                return Response(
+                    {
+                        "detail":
+                        "An application or invitation already exists.",
+                        "status": existing.status
+                    },
+                    status=400
+                )
+
+            skill_names = [
+                s.name for s in opportunity.required_skills.all()
+            ]
+
+            cgpa = _student_cgpa(student)
+            interest = _student_interest(student)
+
+            match = services.compute_opportunity_match(
+                student,
+                skill_names,
+                opportunity.min_cgpa,
+                cgpa,
+                interest,
+                opportunity.title
+            )
+
+            app = Application.objects.create(
+                student=student,
+                job=opportunity,
+                status='invited',
+                match_score=match['match_percent']
+            )
+
+        return Response(
+            ApplicationSerializer(app).data,
+            status=201
+        )
 
 
 class CandidateMatchesView(APIView):
     """Rank students who have at least one required skill match."""
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         internship_id = request.query_params.get('internship_id')
         job_id = request.query_params.get('job_id')
+
         from accounts.models import User
 
         if internship_id:
-            target = get_object_or_404(Internship, pk=internship_id)
-            skill_names = [s.name for s in target.required_skills.all()]
+            target = get_object_or_404(
+                Internship,
+                pk=internship_id
+            )
+
+            skill_names = [
+                s.name for s in target.required_skills.all()
+            ]
+
             min_cgpa = target.min_cgpa
             role_hint = target.title
+
         elif job_id:
-            target = get_object_or_404(Job, pk=job_id)
-            skill_names = [s.name for s in target.required_skills.all()]
+            target = get_object_or_404(
+                Job,
+                pk=job_id
+            )
+
+            skill_names = [
+                s.name for s in target.required_skills.all()
+            ]
+
             min_cgpa = target.min_cgpa
             role_hint = target.title
+
         else:
             return Response(
-                {"detail": "internship_id or job_id required."},
+                {
+                    "detail":
+                    "internship_id or job_id required."
+                },
                 status=400
             )
 
         required_skills = set(skill_names)
 
-        students = User.objects.filter(
-            role='student'
-        ).select_related('student_profile')
+        students = (
+            User.objects
+            .filter(role='student')
+            .select_related('student_profile')
+        )
 
         ranked = []
 
@@ -328,10 +821,9 @@ class CandidateMatchesView(APIView):
 
             student_skills = services.get_student_skill_map(s)
 
-            # Candidate Matching is based only on having
-            # at least one required skill.
             matched_by_skill = [
-                skill for skill in student_skills
+                skill
+                for skill in student_skills
                 if skill in required_skills
             ]
 
@@ -341,7 +833,6 @@ class CandidateMatchesView(APIView):
             cgpa = profile.cgpa
             interest = profile.career_interest or ''
 
-            # Keep the existing calculations for display.
             m = services.compute_opportunity_match(
                 s,
                 skill_names,
@@ -351,9 +842,38 @@ class CandidateMatchesView(APIView):
                 role_hint
             )
 
+            if internship_id:
+                existing_application = Application.objects.filter(
+                    student=s,
+                    internship=target
+                ).first()
+            else:
+                existing_application = Application.objects.filter(
+                    student=s,
+                    job=target
+                ).first()
+
+            invitation_status = (
+                existing_application.status
+                if existing_application
+                else None
+            )
+
             ranked.append({
                 "student_id": s.id,
                 "name": profile.full_name,
+
+                # Student email for recruiter contact
+                "email": profile.user.email,
+
+                "application_id": (
+                    existing_application.id
+                    if existing_application
+                    else None
+                ),
+
+                "application_status": invitation_status,
+
                 "college": profile.college,
                 "degree": profile.degree,
                 "branch": profile.branch,
@@ -374,7 +894,8 @@ class CandidateMatchesView(APIView):
                 "portfolio_url": profile.portfolio_url,
             })
 
-        ranked.sort(key=lambda x: -x['match_percent'])
+        ranked.sort(
+            key=lambda x: -x['match_percent']
+        )
 
-        # No top-20 restriction.
         return Response(ranked)

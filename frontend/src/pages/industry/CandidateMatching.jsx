@@ -15,7 +15,12 @@ import {
   Trophy,
   Code,
   FileText,
-  ExternalLink
+  ExternalLink,
+  Send,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Mail
 } from 'lucide-react'
 
 export default function CandidateMatching() {
@@ -28,6 +33,7 @@ export default function CandidateMatching() {
   const [fetching, setFetching] = useState(false)
   const [portfolio, setPortfolio] = useState(null)
   const [portfolioLoading, setPortfolioLoading] = useState(false)
+  const [invitingStudent, setInvitingStudent] = useState(null)
 
   useEffect(() => {
     ;(async () => {
@@ -101,6 +107,84 @@ export default function CandidateMatching() {
     }
   }
 
+  const inviteCandidate = async (candidate) => {
+    if (candidate.application_status) return
+
+    setInvitingStudent(candidate.student_id)
+
+    try {
+      const [type, id] = selection.split(':')
+
+      const payload =
+        type === 'internship'
+          ? {
+              student_id: candidate.student_id,
+              internship_id: Number(id),
+            }
+          : {
+              student_id: candidate.student_id,
+              job_id: Number(id),
+            }
+
+      const res = await api.post(
+        '/opportunities/candidate-matches/invite/',
+        payload
+      )
+
+      setCandidates((current) =>
+        current.map((item) =>
+          item.student_id === candidate.student_id
+            ? {
+                ...item,
+                application_id: res.data.id,
+                application_status: 'invited',
+              }
+            : item
+        )
+      )
+    } catch (e) {
+      console.error('Failed to invite candidate:', e)
+
+      const message =
+        e.response?.data?.detail ||
+        'Failed to invite candidate.'
+
+      window.alert(message)
+    } finally {
+      setInvitingStudent(null)
+    }
+  }
+
+  const contactCandidate = (candidate) => {
+    if (!candidate.email) {
+      window.alert('Candidate email is not available.')
+      return
+    }
+
+    const opportunityTitle = selection.startsWith('internship:')
+      ? internships.find(
+          (i) => String(i.id) === selection.split(':')[1]
+        )?.title
+      : jobs.find(
+          (j) => String(j.id) === selection.split(':')[1]
+        )?.title
+
+    const subject = encodeURIComponent(
+      `Regarding your application for ${opportunityTitle || 'the opportunity'}`
+    )
+
+    const body = encodeURIComponent(
+      `Hello ${candidate.name},\n\n` +
+      `Thank you for accepting our invitation regarding ` +
+      `${opportunityTitle || 'the opportunity'}.\n\n` +
+      `We would like to discuss the next steps with you.\n\n` +
+      `Regards`
+    )
+
+    window.location.href =
+      `mailto:${candidate.email}?subject=${subject}&body=${body}`
+  }
+
   if (loading) return <LoadingState />
 
   const allOptions = [
@@ -114,11 +198,83 @@ export default function CandidateMatching() {
     })),
   ]
 
+  const getActionButton = (candidate) => {
+    const status = candidate.application_status
+
+    if (status === 'invited') {
+      return (
+        <button
+          disabled
+          className="btn-secondary flex items-center gap-2 text-sm cursor-not-allowed"
+        >
+          <Clock size={15} />
+          Invited
+        </button>
+      )
+    }
+
+    if (status === 'accepted') {
+      return (
+        <button
+          onClick={() => contactCandidate(candidate)}
+          className="btn-primary flex items-center gap-2 text-sm"
+        >
+          <Mail size={15} />
+          Contact Candidate
+        </button>
+      )
+    }
+
+    if (status === 'rejected') {
+      return (
+        <button
+          disabled
+          className="btn-secondary flex items-center gap-2 text-sm text-rose-600 cursor-not-allowed"
+        >
+          <XCircle size={15} />
+          Rejected
+        </button>
+      )
+    }
+
+    if (
+      status === 'applied' ||
+      status === 'under_review' ||
+      status === 'shortlisted' ||
+      status === 'interview' ||
+      status === 'selected'
+    ) {
+      return (
+        <button
+          disabled
+          className="btn-secondary flex items-center gap-2 text-sm cursor-not-allowed"
+        >
+          <CheckCircle2 size={15} />
+          Already Applied
+        </button>
+      )
+    }
+
+    return (
+      <button
+        onClick={() => inviteCandidate(candidate)}
+        disabled={invitingStudent === candidate.student_id}
+        className="btn-primary flex items-center gap-2 text-sm"
+      >
+        <Send size={15} />
+        {invitingStudent === candidate.student_id
+          ? 'Inviting...'
+          : 'Invite Candidate'}
+      </button>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="card p-6">
         <div className="flex items-center gap-2 mb-1">
           <Users size={20} className="text-brand-600" />
+
           <h1 className="text-xl font-bold text-slate-800">
             Candidate Matching
           </h1>
@@ -232,7 +388,7 @@ export default function CandidateMatching() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-start md:justify-end">
+                <div className="flex items-center justify-start md:justify-end gap-2 flex-wrap">
                   <button
                     onClick={() => viewPortfolio(c.student_id)}
                     disabled={portfolioLoading}
@@ -241,6 +397,8 @@ export default function CandidateMatching() {
                     <FileText size={15} />
                     {portfolioLoading ? 'Loading...' : 'View Portfolio'}
                   </button>
+
+                  {getActionButton(c)}
                 </div>
               </div>
             </div>
