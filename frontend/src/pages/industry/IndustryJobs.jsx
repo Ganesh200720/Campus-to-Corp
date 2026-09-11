@@ -188,7 +188,7 @@ export default function IndustryJobs() {
                   )}
 
                   <Link
-                    to={`/industry/candidate-matching?job_id=${job.id}`}
+                    to={`/industry/collaboration-candidates?job_id=${job.id}`}
                     className="group/btn inline-flex items-center gap-1.5
                                px-3.5 py-2 text-xs font-semibold
                                text-slate-800 bg-white border border-slate-300
