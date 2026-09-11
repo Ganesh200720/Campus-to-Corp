@@ -45,10 +45,12 @@ class PortfolioView(APIView):
 
     def get(self, request, student_id=None):
         from accounts.models import User
+
         target = request.user if not student_id else User.objects.get(pk=student_id)
         profile = getattr(target, 'student_profile', None)
         readiness = services.compute_placement_readiness(target)
         skills = services.get_student_skill_map(target)
+
         data = {
             "profile": {
                 "full_name": profile.full_name if profile else target.username,
@@ -59,11 +61,23 @@ class PortfolioView(APIView):
                 "cgpa": profile.cgpa if profile else None,
                 "bio": profile.bio if profile else '',
                 "career_interest": profile.career_interest if profile else '',
+                "github_url": profile.github_url if profile else '',
+                "linkedin_url": profile.linkedin_url if profile else '',
+                "portfolio_url": profile.portfolio_url if profile else '',
+                "location": profile.location if profile else '',
+                "email": target.email,
             },
             "skills": skills,
-            "projects": ProjectSerializer(Project.objects.filter(student=target), many=True).data,
-            "certifications": CertificationSerializer(Certification.objects.filter(student=target), many=True).data,
-            "achievements": AchievementSerializer(Achievement.objects.filter(student=target), many=True).data,
+            "projects": ProjectSerializer(
+                Project.objects.filter(student=target), many=True
+            ).data,
+            "certifications": CertificationSerializer(
+                Certification.objects.filter(student=target), many=True
+            ).data,
+            "achievements": AchievementSerializer(
+                Achievement.objects.filter(student=target), many=True
+            ).data,
             "placement_readiness": readiness,
         }
+
         return Response(data)
