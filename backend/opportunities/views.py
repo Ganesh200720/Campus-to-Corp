@@ -288,7 +288,7 @@ class UpdateApplicationStatusView(APIView):
 
 
 class CandidateMatchesView(APIView):
-    """Rank all students against a given internship or job's required skills."""
+    """Rank students who have at least one required skill match."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -307,9 +307,17 @@ class CandidateMatchesView(APIView):
             min_cgpa = target.min_cgpa
             role_hint = target.title
         else:
-            return Response({"detail": "internship_id or job_id required."}, status=400)
+            return Response(
+                {"detail": "internship_id or job_id required."},
+                status=400
+            )
 
-        students = User.objects.filter(role='student').select_related('student_profile')
+        required_skills = set(skill_names)
+
+        students = User.objects.filter(
+            role='student'
+        ).select_related('student_profile')
+
         ranked = []
 
         for s in students:
@@ -317,10 +325,30 @@ class CandidateMatchesView(APIView):
                 continue
 
             profile = s.student_profile
+
+            student_skills = services.get_student_skill_map(s)
+
+            # Candidate Matching is based only on having
+            # at least one required skill.
+            matched_by_skill = [
+                skill for skill in student_skills
+                if skill in required_skills
+            ]
+
+            if not matched_by_skill:
+                continue
+
             cgpa = profile.cgpa
             interest = profile.career_interest or ''
+
+            # Keep the existing calculations for display.
             m = services.compute_opportunity_match(
-                s, skill_names, min_cgpa, cgpa, interest, role_hint
+                s,
+                skill_names,
+                min_cgpa,
+                cgpa,
+                interest,
+                role_hint
             )
 
             ranked.append({
@@ -336,15 +364,17 @@ class CandidateMatchesView(APIView):
                 "career_interest": profile.career_interest,
                 "resume_uploaded": profile.resume_uploaded,
                 "profile_completion": profile.profile_completion,
-                "skills": services.get_student_skill_map(s),
+                "skills": student_skills,
                 "match_percent": m['match_percent'],
                 "matched_skills": m['matched_skills'],
                 "skill_gaps": m['skill_gaps'],
                 "cgpa_eligible": m['cgpa_eligible'],
-                "github_url": s.student_profile.github_url,
-                "linkedin_url": s.student_profile.linkedin_url,
-                "portfolio_url": s.student_profile.portfolio_url,
+                "github_url": profile.github_url,
+                "linkedin_url": profile.linkedin_url,
+                "portfolio_url": profile.portfolio_url,
             })
 
         ranked.sort(key=lambda x: -x['match_percent'])
-        return Response(ranked[:20])
+
+        # No top-20 restriction.
+        return Response(ranked)

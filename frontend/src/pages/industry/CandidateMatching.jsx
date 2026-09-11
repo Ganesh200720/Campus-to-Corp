@@ -491,36 +491,6 @@ export default function CandidateMatching() {
                 )}
               </section>
 
-              <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles size={17} className="text-brand-600" />
-                  <h3 className="font-semibold text-slate-800">
-                    Placement Readiness
-                  </h3>
-                </div>
-
-                <div className="bg-slate-50 rounded-xl p-4">
-                  {Object.entries(
-                    portfolio.placement_readiness || {}
-                  ).map(([key, value]) => (
-                    <div
-                      key={key}
-                      className="flex justify-between items-center py-2 border-b last:border-0 border-slate-200"
-                    >
-                      <span className="text-sm text-slate-600 capitalize">
-                        {key.replaceAll('_', ' ')}
-                      </span>
-
-                      <span className="text-sm font-semibold text-slate-800">
-                        {typeof value === 'number'
-                          ? `${value}%`
-                          : String(value)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
             </div>
           </div>
         </div>
