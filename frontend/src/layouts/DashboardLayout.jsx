@@ -64,9 +64,8 @@ const NAV = {
   ],
 
   admin: [
-    { to: '/admin', label: 'Institution Analytics', icon: BarChart3, end: true },
-
-    // Collaboration
+    { to: '/admin', label: 'Institution Dashboard', icon: BarChart3, end: true },
+    { to: '/admin/students', label: 'Students', icon: Users },
     { to: '/admin/collaborations', label: 'Collaborations', icon: Users },
     { to: '/admin/my-collaborations', label: 'My Collaborations', icon: FolderKanban },
   ],
@@ -76,7 +75,7 @@ const ROLE_LABEL = {
   student: 'Student',
   industry: 'Industry Partner',
   faculty: 'Faculty',
-  admin: 'Institution Admin',
+  admin: 'Institution',
 }
 
 export default function DashboardLayout({ children }) {

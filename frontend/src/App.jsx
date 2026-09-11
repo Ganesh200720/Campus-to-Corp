@@ -6,6 +6,7 @@ import DashboardLayout from './layouts/DashboardLayout'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 
+// Student
 import StudentDashboard from './pages/student/StudentDashboard'
 import StudentProfile from './pages/student/Profile'
 import Assessment from './pages/student/Assessment'
@@ -20,6 +21,7 @@ import Portfolio from './pages/student/Portfolio'
 import CompanyAssessments from './pages/student/CompanyAssessments'
 import TakeCompanyAssessment from './pages/student/TakeCompanyAssessment'
 
+// Industry
 import IndustryDashboard from './pages/industry/IndustryDashboard'
 import PostOpportunity from './pages/industry/PostOpportunity'
 import IndustryInternships from './pages/industry/IndustryInternships'
@@ -43,10 +45,11 @@ import FacultyOpportunities from './pages/faculty/FacultyOpportunities'
 import FacultyCollaborations from './pages/faculty/Collaborations'
 import FacultyMyCollaborations from './pages/faculty/MyCollaborations'
 
-// Admin
+// Institution
 import AdminDashboard from './pages/admin/AdminDashboard'
+import InstitutionStudents from './pages/admin/InstitutionStudents'
 
-// Collaboration - Admin
+// Collaboration - Institution
 import AdminCollaborations from './pages/admin/Collaborations'
 import AdminMyCollaborations from './pages/admin/MyCollaborations'
 
@@ -73,6 +76,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/login" element={<Login />} />
 
@@ -347,7 +351,7 @@ export default function App() {
             }
           />
 
-          {/* ==================== ADMIN ==================== */}
+          {/* ==================== INSTITUTION ==================== */}
 
           <Route
             path="/admin"
@@ -358,7 +362,16 @@ export default function App() {
             }
           />
 
-          {/* ==================== ADMIN COLLABORATIONS ==================== */}
+          <Route
+            path="/admin/students"
+            element={
+              <Wrapped role="admin">
+                <InstitutionStudents />
+              </Wrapped>
+            }
+          />
+
+          {/* ==================== INSTITUTION COLLABORATIONS ==================== */}
 
           <Route
             path="/admin/collaborations"
@@ -381,6 +394,7 @@ export default function App() {
           {/* ==================== FALLBACK ==================== */}
 
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </AuthProvider>
     </BrowserRouter>
