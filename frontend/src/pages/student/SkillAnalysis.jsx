@@ -12,6 +12,12 @@ import {
   TrendingDown,
   Target,
   Award,
+  ChevronDown,
+  ChevronRight,
+  CheckCircle2,
+  Circle,
+  BookOpen,
+  Layers3,
 } from 'lucide-react'
 
 import {
@@ -29,21 +35,34 @@ export default function SkillAnalysis() {
   const [roles, setRoles] = useState([])
   const [role, setRole] = useState('')
   const [gap, setGap] = useState(null)
+
+  const [assessmentStructure, setAssessmentStructure] = useState([])
+  const [expandedSkills, setExpandedSkills] = useState({})
+
   const [loading, setLoading] = useState(true)
+  const [assessmentLoading, setAssessmentLoading] = useState(true)
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [scores, roleList] = await Promise.all([
+        const [scores, roleList, structure] = await Promise.all([
           api.get('/skills/my-scores/'),
           api.get('/skills/roles/'),
+          api.get('/skills/assessment/structure/'),
         ])
 
         const scoresData = scores.data || []
         const rolesData = roleList.data || []
+        const structureData = structure.data || []
 
         setMyScores(scoresData)
         setRoles(rolesData)
+
+        setAssessmentStructure(
+          Array.isArray(structureData)
+            ? structureData
+            : structureData.skills || []
+        )
 
         const defaultRole = rolesData[0]
         setRole(defaultRole || '')
@@ -54,8 +73,11 @@ export default function SkillAnalysis() {
           )
           setGap(response.data)
         }
+      } catch (error) {
+        console.error('Failed to load skill analysis:', error)
       } finally {
         setLoading(false)
+        setAssessmentLoading(false)
       }
     }
 
@@ -72,6 +94,8 @@ export default function SkillAnalysis() {
       )
 
       setGap(response.data)
+    } catch (error) {
+      console.error('Failed to load role gap:', error)
     } finally {
       setLoading(false)
     }
@@ -117,7 +141,38 @@ export default function SkillAnalysis() {
     }))
   }, [normalizedScores])
 
-  if (loading && !gap && myScores.length === 0) {
+  const toggleSkill = (skillId) => {
+    setExpandedSkills((current) => ({
+      ...current,
+      [skillId]: !current[skillId],
+    }))
+  }
+
+  // Only show a module score after the actual module assessment
+  // has been completed. Topic scores are displayed separately.
+  const getModuleScore = (module) => {
+    if (
+      module.completed &&
+      module.score !== null &&
+      module.score !== undefined
+    ) {
+      return Number(module.score)
+    }
+
+    return null
+  }
+
+  const getTopicStatus = (topic) => {
+    if (topic.completed) return 'completed'
+    return 'pending'
+  }
+
+  if (
+    loading &&
+    !gap &&
+    myScores.length === 0 &&
+    assessmentLoading
+  ) {
     return <LoadingState label="Analyzing your skills..." />
   }
 
@@ -399,6 +454,245 @@ export default function SkillAnalysis() {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Assessment Progress */}
+      <div className="card p-6">
+        <div className="flex items-start gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center shrink-0">
+            <Layers3 size={20} />
+          </div>
+
+          <div>
+            <h2 className="font-semibold text-slate-800">
+              Skill Assessment Progress
+            </h2>
+
+            <p className="text-sm text-slate-500">
+              Track your progress from topics to modules and complete skill assessments.
+            </p>
+          </div>
+        </div>
+
+        {assessmentLoading ? (
+          <div className="text-sm text-slate-500 bg-slate-50 rounded-xl p-4">
+            Loading assessment progress...
+          </div>
+        ) : assessmentStructure.length === 0 ? (
+          <div className="text-sm text-slate-500 bg-slate-50 rounded-xl p-4">
+            No detailed assessment progress is available yet.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {assessmentStructure.map((skill) => {
+              const skillId = skill.id
+              const isExpanded = expandedSkills[skillId]
+              const modules = skill.modules || []
+
+              const completedModules = modules.filter(
+                (module) => module.completed
+              ).length
+
+              const skillScore =
+                skill.score !== null && skill.score !== undefined
+                  ? Number(skill.score)
+                  : null
+
+              return (
+                <div
+                  key={skillId}
+                  className="border border-slate-200 rounded-xl overflow-hidden"
+                >
+                  {/* Skill Header */}
+                  <button
+                    type="button"
+                    onClick={() => toggleSkill(skillId)}
+                    className="w-full p-4 flex items-center justify-between gap-4 hover:bg-slate-50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="text-slate-400 shrink-0">
+                        {isExpanded ? (
+                          <ChevronDown size={18} />
+                        ) : (
+                          <ChevronRight size={18} />
+                        )}
+                      </div>
+
+                      <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                        <BookOpen size={17} />
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-800 truncate">
+                          {skill.name || skill.skill_name}
+                        </p>
+
+                        <p className="text-xs text-slate-500">
+                          {completedModules}/{modules.length} modules completed
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      {skillScore !== null && (
+                        <span className="font-bold text-brand-600">
+                          {Math.round(skillScore)}%
+                        </span>
+                      )}
+
+                      {skillScore === null && (
+                        <span className="text-xs text-slate-400">
+                          Not assessed
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Modules */}
+                  {isExpanded && (
+                    <div className="border-t border-slate-200 bg-slate-50/50 p-4 space-y-3">
+                      {modules.length === 0 ? (
+                        <p className="text-sm text-slate-500">
+                          No modules available for this skill.
+                        </p>
+                      ) : (
+                        modules.map((module) => {
+                          const moduleScore = getModuleScore(module)
+                          const topics = module.topics || []
+
+                          const completedTopics = topics.filter(
+                            (topic) => topic.completed
+                          ).length
+
+                          return (
+                            <div
+                              key={module.id}
+                              className="bg-white border border-slate-200 rounded-xl p-4"
+                            >
+                              {/* Module Header */}
+                              <div className="flex items-center justify-between gap-4 mb-3">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {module.completed ? (
+                                    <CheckCircle2
+                                      size={18}
+                                      className="text-emerald-500 shrink-0"
+                                    />
+                                  ) : (
+                                    <Circle
+                                      size={18}
+                                      className="text-slate-300 shrink-0"
+                                    />
+                                  )}
+
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-slate-800">
+                                      {module.title}
+                                    </p>
+
+                                    <p className="text-xs text-slate-500">
+                                      {completedTopics}/{topics.length} topics completed
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  {moduleScore !== null ? (
+                                    <span className="font-semibold text-brand-600">
+                                      {Math.round(moduleScore)}%
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-slate-400">
+                                      In progress
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Module Progress Bar */}
+                              <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-4">
+                                <div
+                                  className={`h-full rounded-full ${
+                                    module.completed
+                                      ? 'bg-emerald-500'
+                                      : 'bg-brand-500'
+                                  }`}
+                                  style={{
+                                    width: `${
+                                      topics.length
+                                        ? (completedTopics / topics.length) * 100
+                                        : module.completed
+                                          ? 100
+                                          : 0
+                                    }%`,
+                                  }}
+                                />
+                              </div>
+
+                              {/* Topics */}
+                              {topics.length > 0 && (
+                                <div className="space-y-2">
+                                  {topics.map((topic) => {
+                                    const topicStatus = getTopicStatus(topic)
+
+                                    return (
+                                      <div
+                                        key={topic.id}
+                                        className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-100"
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          {topicStatus === 'completed' ? (
+                                            <CheckCircle2
+                                              size={15}
+                                              className="text-emerald-500 shrink-0"
+                                            />
+                                          ) : (
+                                            <Circle
+                                              size={15}
+                                              className="text-slate-300 shrink-0"
+                                            />
+                                          )}
+
+                                          <span className="text-sm text-slate-700 truncate">
+                                            {topic.title}
+                                          </span>
+                                        </div>
+
+                                        <div className="shrink-0">
+                                          {topic.completed &&
+                                          topic.score !== null &&
+                                          topic.score !== undefined ? (
+                                            <span className="text-xs font-semibold text-emerald-600">
+                                              {Math.round(Number(topic.score))}%
+                                            </span>
+                                          ) : (
+                                            <span className="text-xs text-slate-400">
+                                              Not completed
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )}
+
+                              {/* Module Attempts */}
+                              {module.attempts > 0 && (
+                                <div className="mt-3 text-xs text-slate-400">
+                                  Module attempts: {module.attempts}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Role Gap Analysis */}
